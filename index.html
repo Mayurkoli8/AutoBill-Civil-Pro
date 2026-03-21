@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>AutoBill Civil Pro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -678,10 +679,13 @@ function renderImport(p){
     '<select class="sel wf mb10" id="imp-sel"><option value="">\u2014 Select target item \u2014</option>'+p.items.map(function(it){return'<option value="'+it.id+'"'+(p.importTarget===it.id?' selected':'')+'>'+esc(it.name)+'</option>'}).join('')+'</select>'+
     '<button class="btn am wf"'+(p.importTarget?'':' disabled')+' onclick="doImport()">Import '+parsed.length+' Rows \u2192</button></div></div>':
     '<div class="pp" style="display:flex;align-items:center;justify-content:center;color:var(--k4);font-size:11.5px">'+(p.importText?'No rows detected':'Start typing\u2026')+'</div>';
-  return'<div class="imp-eg mb13"><div class="egt">Supported Formats</div>'+
-    [['Slash:','3/6.00/0.23/3.20'],['Cross:','3x6.00x0.23x3.20'],['Formula:','1/pi*4*4/1/1.50'],['Deduction:','Less: Window  6/1.20/0.23/1.50']].map(function(x){return'<div class="eg-row"><span class="eg-f">'+x[0]+'</span><span>'+x[1]+'</span></div>'}).join('')+'</div>'+
-    '<div class="imp-layout"><div><div class="sec-t mb10">Paste Field Notes / Site Measurements</div>'+
-    '<textarea class="imp-ta" id="imp-ta" placeholder="Paste your field measurements here\u2026"></textarea>'+
+  return'<div style="background:var(--tl-bg);border:1px solid var(--tl-bd);border-radius:7px;padding:11px 14px;margin-bottom:13px;font-size:11.5px;color:var(--tl)">'+
+    '<b>This is for site measurement notes (L × B × D)</b> — paste numbers you recorded at site and the app converts them into MB rows.<br>'+
+    '<span style="font-size:10.5px;opacity:.85">To upload a BOQ PDF, go to <b>⚙ Edit Project</b> in the top bar.</span></div>'+
+    '<div class="imp-eg mb13"><div class="egt">Supported Formats — paste any of these</div>'+
+    [['Slash notation:','3/6.00/0.23/3.20'],['Cross notation:','3x6.00x0.23x3.20'],['Formula (circles):','1/pi*4*4/1/1.50'],['Deduction row:','Less: Window  6/1.20/0.23/1.50']].map(function(x){return'<div class="eg-row"><span class="eg-f">'+x[0]+'</span><span>'+x[1]+'</span></div>'}).join('')+'</div>'+
+    '<div class="imp-layout"><div><div class="sec-t mb10">📋 Paste Site Measurements (L×B×D numbers)</div>'+
+    '<textarea class="imp-ta" id="imp-ta" placeholder="Paste your field notebook numbers here…\n\nExamples:\n3/6.00/0.23/3.20\n2x4.50x0.23x3.20\nLess: Window openings\n6/1.20/0.23/1.50"></textarea>'+
     '<button class="btn sm ghost mt8" onclick="loadEg()">Load Example</button></div>'+
     '<div><div class="sec-t mb10">Parsed Preview ('+parsed.length+' rows)</div>'+prev+'</div></div>';
 }
@@ -724,10 +728,10 @@ function renderExport(p){
 }
 
 /* ═══════ PROJECT MODAL ═══════ */
-var NPD={name:'',contractNo:'',location:'',engineer:'',contractor:'',color:'#0b7a69',boq:[],newSec:'General',newDesc:'',newQty:'',newUnit:'Cum',newRate:'',pasteTxt:''};
+var NPD={name:'',contractNo:'',location:'',engineer:'',contractor:'',color:'#0b7a69',boq:[],newSec:'General',newDesc:'',newQty:'',newUnit:'Cum',newRate:'',pdfParsing:false,pdfFileName:''};
 var editId=null;
-function openNewProject(){editId=null;NPD={name:'',contractNo:'',location:'',engineer:'',contractor:'',color:COLORS[1],boq:[],newSec:'General',newDesc:'',newQty:'',newUnit:'Cum',newRate:'',pasteTxt:''};showModal(projModal());}
-function openEditProject(){var p=proj();if(!p)return;editId=p.id;NPD={name:p.name,contractNo:p.contractNo||'',location:p.location||'',engineer:p.engineer||'',contractor:p.contractor||'',color:p.color||COLORS[1],boq:JSON.parse(JSON.stringify(p.boq||[])),newSec:'General',newDesc:'',newQty:'',newUnit:'Cum',newRate:'',pasteTxt:''};showModal(projModal());}
+function openNewProject(){editId=null;NPD={name:'',contractNo:'',location:'',engineer:'',contractor:'',color:COLORS[1],boq:[],newSec:'General',newDesc:'',newQty:'',newUnit:'Cum',newRate:'',pdfParsing:false,pdfFileName:''};showModal(projModal());}
+function openEditProject(){var p=proj();if(!p)return;editId=p.id;NPD={name:p.name,contractNo:p.contractNo||'',location:p.location||'',engineer:p.engineer||'',contractor:p.contractor||'',color:p.color||COLORS[1],boq:JSON.parse(JSON.stringify(p.boq||[])),newSec:'General',newDesc:'',newQty:'',newUnit:'Cum',newRate:'',pdfParsing:false,pdfFileName:''};showModal(projModal());}
 function projModal(){
   var isEdit=editId!==null;
   var colorDots=COLORS.map(function(c){return'<div class="cp-dot'+(NPD.color===c?' sel':'')+'" style="background:'+c+'" onclick="npColor(\''+c+'\')"></div>'}).join('');
@@ -762,13 +766,36 @@ function projModal(){
     '<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Unit</div><select class="form-input sm" onchange="NPD.newUnit=this.value">'+['Cum','Sqm','Rmt','MT','Nos','Sets','BHP','M','Kg','Job','Months','Days','Km'].map(function(u){return'<option'+(NPD.newUnit===u?' selected':'')+'>'+u+'</option>'}).join('')+'</select></div>'+
     '<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Rate (\u20b9) *</div><input type="number" class="form-input sm" placeholder="0.00" value="'+NPD.newRate+'" oninput="NPD.newRate=this.value"></div>'+
     '<button class="btn am sm" onclick="npAddBoq()" style="height:30px">+ Add</button></div></div>'+
-    '<div style="background:var(--bl-bg);border:1px solid var(--bl-bd);border-radius:6px;padding:10px 12px">'+
-    '<div style="font-size:10px;font-weight:600;color:var(--bl);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">📋 Paste from Excel / Spreadsheet</div>'+
-    '<div style="font-size:10.5px;color:var(--k3);margin-bottom:7px">Copy cells from Excel: Description | Qty | Unit | Rate — then paste below</div>'+
-    '<textarea class="form-input sm" style="height:70px;resize:none;font-family:var(--mono);font-size:10.5px" placeholder="Paste Excel rows here (Tab or comma separated)&#10;Excavation in Foundation&#9;286.56&#9;Cum&#9;464&#10;PCC M150 in Foundation&#9;5.20&#9;Cum&#9;6771.29" oninput="NPD.pasteTxt=this.value">'+esc(NPD.pasteTxt)+'</textarea>'+
-    '<button class="btn sm" style="margin-top:6px" onclick="npPasteBoq()">Parse &amp; Import Rows</button></div></div>'+
+    '<div style="background:var(--bl-bg);border:1px solid var(--bl-bd);border-radius:6px;padding:12px 14px" id="pdf-drop-zone">'+
+    '<div style="font-size:10px;font-weight:600;color:var(--bl);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">📄 Upload BOQ PDF — Auto-reads all items</div>'+
+    '<div style="font-size:10.5px;color:var(--k3);margin-bottom:9px;line-height:1.5">Drop your government BOQ / rate schedule PDF here. App reads all items, quantities, units and rates automatically.</div>'+
+    (NPD.pdfParsing
+      // ── PARSING IN PROGRESS — show spinner, block everything ──
+      ? '<div style="border:1.5px solid var(--bl-bd);border-radius:6px;padding:20px;text-align:center;background:#fff">'
+        + '<div style="font-size:26px;margin-bottom:8px">⏳</div>'
+        + '<div style="font-size:13px;font-weight:600;color:var(--bl);margin-bottom:4px">Reading PDF…</div>'
+        + '<div style="font-size:11px;color:var(--k3)">Please wait — do not close this window.<br>The <b>Create Project</b> button will unlock when done.</div>'
+        + '</div>'
+      // ── DONE or NOT STARTED ──
+      : '<div id="pdf-upload-area" style="border:1.5px dashed var(--bl-bd);border-radius:6px;padding:16px;text-align:center;cursor:pointer;transition:all .15s;background:#fff" onclick="document.getElementById(\'pdf-file-in\').click()" ondragover="event.preventDefault();this.style.borderColor=\'var(--bl)\'" ondragleave="this.style.borderColor=\'var(--bl-bd)\'" ondrop="npDropPDF(event)">'
+        + (NPD.pdfFileName
+            ? '<div style="font-size:13px;font-weight:600;color:var(--gr)">✓ ' + esc(NPD.pdfFileName) + '</div>'
+              + '<div style="font-size:10.5px;color:var(--k3);margin-top:3px">' + NPD.boq.length + ' items loaded — click to replace with a different PDF</div>'
+            : '<div style="font-size:24px;margin-bottom:6px;opacity:.5">📎</div>'
+              + '<div style="font-size:12px;font-weight:500;color:var(--bl)">Click to browse or drag &amp; drop PDF</div>'
+              + '<div style="font-size:10px;color:var(--k4);margin-top:3px">Government BOQ, rate schedule, tender documents</div>'
+          )
+        + '</div>'
+    )+
+    '<input type="file" id="pdf-file-in" accept=".pdf" style="display:none" onchange="npReadPDF(this.files[0])">'+
+    '<div id="pdf-parse-status" style="margin-top:7px;font-size:11px;color:var(--k3);'+(NPD.pdfFileName&&!NPD.pdfParsing?'display:block':'display:none')+'">'+
+      (NPD.pdfFileName&&!NPD.pdfParsing?'<span style="color:var(--gr)">✓ '+NPD.boq.length+' BOQ items ready — scroll up to review or save project</span>':'')
+    +'</div>'+
+    '</div></div>'+
     '<div style="display:flex;gap:8px;margin-top:4px">'+
-    '<button class="btn am wf" onclick="saveProject()">'+(isEdit?'Save Changes':'Create Project')+'</button>'+
+    '<button class="btn am wf" onclick="saveProject()" '+(NPD.pdfParsing?'disabled style="opacity:.45;cursor:not-allowed"':'')+'>'
+      +(NPD.pdfParsing?'⏳ Waiting for PDF…':(isEdit?'Save Changes':'Create Project'))+
+    '</button>'+
     (isEdit?'<button class="btn rd sm" onclick="deleteProject()">Delete Project</button>':'')+
     '</div></div>';
 }
@@ -779,18 +806,7 @@ function npAddBoq(){
   NPD.newDesc='';NPD.newQty='';NPD.newRate='';showModal(projModal());
 }
 function npDelBoq(i){NPD.boq.splice(i,1);showModal(projModal());}
-function npPasteBoq(){
-  if(!NPD.pasteTxt.trim()){toast('Paste some data first');return;}
-  var lines=NPD.pasteTxt.trim().split('\n');var added=0;
-  lines.forEach(function(line){
-    if(!line.trim())return;
-    var cols=line.split(/\t/);
-    if(cols.length<2)cols=line.split(',');
-    var desc=(cols[0]||'').trim();var qty=parseFloat(cols[1]);var unit=(cols[2]||'Cum').trim();var rate=parseFloat(cols[3]);
-    if(desc&&qty>0&&rate>0){NPD.boq.push({id:'b'+uid(),sec:NPD.newSec||'General',desc,qty,unit,rate});added++;}
-  });
-  NPD.pasteTxt='';showModal(projModal());if(added>0)toast(added+' BOQ items imported from paste');else toast('No valid rows found — check format');
-}
+
 function saveProject(){
   if(!NPD.name.trim()){toast('Project name is required');return;}
   if(editId){
@@ -809,7 +825,156 @@ function deleteProject(){
   saveState();closeModal();render();
 }
 
-/* ═══════ ITEM LIBRARY ═══════ */
+/* ═══════ PDF BOQ PARSER ═══════ */
+// Unit keywords to detect in BOQ rows
+var UNITS_RE = /\b(Cum|Sqm|Rmt|Rmt\.|R\.M\.T|M\.T\.|MT|Nos?\.?|Sets?|BHP|Jobs?|Months?|Days?|Km|KM|RM|Ltr|Lt\.?|Kg|KG|Sqmt|Mtr)\b/i;
+var UNIT_NORM = {cum:'Cum',sqm:'Sqm',sqmt:'Sqm',rmt:'Rmt','rmt.':'Rmt','r.m.t':'Rmt','m.t.':'MT',mt:'MT',no:'Nos','no.':'Nos',nos:'Nos','nos.':'Nos',sets:'Sets',set:'Sets',bhp:'BHP',job:'Job',jobs:'Job',months:'Months',month:'Months',days:'Days',day:'Days',km:'Km',rm:'Rmt',ltr:'Ltr','lt.':'Ltr',kg:'Kg',mtr:'Rmt'};
+
+function normUnit(u){return UNIT_NORM[u.toLowerCase().replace(/\.$/,'')]||u;}
+
+// Extract BOQ items from raw PDF text lines
+function parseBOQText(lines){
+  var items=[];
+  var descBuf=[];
+  var currentSection='General';
+
+  // Detect section header lines (short, uppercase, no numbers)
+  function isSecHeader(l){return l.length>5&&l.length<80&&!/\d{3,}/.test(l)&&/[A-Z]{3,}/.test(l)&&!/^\s*\d+\.?\s/.test(l)&&(l===l.toUpperCase()||/^[A-Z][A-Z\s\/\-&]+$/.test(l.trim()));}
+
+  // Try to extract a data row: description? qty unit rate
+  function tryParseRow(line){
+    // Pattern: [optional leading desc] NUMBER UNIT NUMBER [more numbers]
+    var m=line.match(/(.{0,80}?)\s+([\d,]+(?:\.\d+)?)\s+(Cum|Sqm|Rmt|MT|Nos?\.?|Sets?|BHP|Jobs?|Months?|Days?|Km|Sqmt|Mtr|Kg|Ltr|RM|M)\b\.?\s+([\d,]+(?:\.\d+)?)\s/i);
+    if(!m)return null;
+    var qty=parseFloat(m[2].replace(/,/g,''));
+    var unit=normUnit(m[3]);
+    var rate=parseFloat(m[4].replace(/,/g,''));
+    if(qty<=0||rate<=0||qty>999999||rate>99999999)return null;
+    return{leadDesc:m[1].trim(),qty,unit,rate};
+  }
+
+  for(var i=0;i<lines.length;i++){
+    var line=lines[i].trim();
+    if(!line||line.length<3)continue;
+
+    // Detect section headers like "SUPPLY WELL", "APPROACH BRIDGE" etc
+    if(isSecHeader(line)&&line.length<60){currentSection=line.replace(/^\d+[\.\s]*/,'').trim();descBuf=[];continue;}
+
+    var parsed=tryParseRow(line);
+    if(parsed){
+      // Build description: leadDesc from this line OR accumulated descBuf
+      var desc=(parsed.leadDesc||'').replace(/^\d+[\.\s]*/,'').trim();
+      if(!desc&&descBuf.length>0){
+        // Use last non-empty accumulated description
+        desc=descBuf.filter(function(d){return d.trim().length>4}).slice(-2).join(' — ');
+      }
+      if(!desc)desc='Item '+(items.length+1);
+      // Clean up description
+      desc=desc.replace(/^\s*item\s*(no\.?)?\s*\d+[\.\s]*/i,'').replace(/\s+/g,' ').trim();
+      if(desc.length>120)desc=desc.substring(0,120)+'…';
+      if(desc.length>3){
+        items.push({id:'b'+uid(),sec:currentSection,desc:desc,qty:qty,unit:parsed.unit,rate:parsed.rate});
+      }
+      descBuf=[];
+    } else {
+      // Accumulate as potential description text
+      var clean=line.replace(/^\s*\d+[\.\s]*/,'').trim();
+      if(clean.length>4&&!/^(INR|Rs\.?|Total|Amount|[\d\s,\.]+$)/.test(clean)){
+        // Keep only last 3 lines of description buffer
+        if(descBuf.length>=3)descBuf.shift();
+        descBuf.push(clean);
+      }
+    }
+  }
+  return items;
+}
+
+function npDropPDF(e){
+  e.preventDefault();
+  var file=e.dataTransfer.files[0];
+  if(file&&file.type==='application/pdf')npReadPDF(file);
+  else toast('Please drop a PDF file');
+}
+
+function npReadPDF(file){
+  if(!file)return;
+  if(!window.pdfjsLib){
+    toast('PDF reader not loaded — check internet connection');
+    return;
+  }
+  // Lock the modal — disable Create button, show spinner
+  NPD.pdfParsing=true;
+  NPD.pdfFileName=file.name;
+  showModal(projModal()); // re-render with spinner + disabled button
+
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var typedArr=new Uint8Array(ev.target.result);
+    window.pdfjsLib.getDocument({data:typedArr}).promise.then(function(pdf){
+      var pageTexts=new Array(pdf.numPages);
+      var pagePromises=[];
+      for(var pg=1;pg<=pdf.numPages;pg++){
+        (function(pgNum){
+          pagePromises.push(pdf.getPage(pgNum).then(function(page){
+            return page.getTextContent().then(function(tc){
+              // Group by y, sort top-to-bottom, join each line
+              var lineMap={};
+              tc.items.forEach(function(item){
+                var y=Math.round(item.transform[5]);
+                if(!lineMap[y])lineMap[y]=[];
+                lineMap[y].push(item.str);
+              });
+              var ys=Object.keys(lineMap).map(Number).sort(function(a,b){return b-a;});
+              pageTexts[pgNum-1]=ys.map(function(y){return lineMap[y].join(' ');});
+            });
+          }));
+        })(pg);
+      }
+      Promise.all(pagePromises).then(function(){
+        var allLines=[].concat.apply([],pageTexts.filter(Boolean));
+        var items=parseBOQText(allLines);
+
+        // Clear old PDF items, add new ones (avoid dupes by desc+qty)
+        var existing=NPD.boq.filter(function(b){return !b._fromPDF;}); // keep manual items
+        var newItems=items.map(function(it){it._fromPDF=true;return it;});
+        NPD.boq=existing.concat(newItems);
+        NPD.pdfParsing=false; // unlock
+
+        showModal(projModal()); // re-render with items listed + enabled button
+
+        // Scroll to BOQ list in modal after render
+        setTimeout(function(){
+          var mbody=document.querySelector('.modal .mbody');
+          if(mbody)mbody.scrollTop=0;
+          var statusEl=document.getElementById('pdf-parse-status');
+          if(statusEl){
+            statusEl.style.display='block';
+            statusEl.innerHTML=items.length>0
+              ?'<span style="color:var(--gr)">✓ <b>'+items.length+' BOQ items</b> extracted from '+esc(file.name)+'</span>'
+              :'<span style="color:var(--or)">⚠ No items found — PDF may be image-based (scanned). Add items manually below.</span>';
+          }
+        },80);
+      });
+    }).catch(function(err){
+      NPD.pdfParsing=false;
+      NPD.pdfFileName='';
+      showModal(projModal());
+      toast('Error reading PDF: '+(err.message||'unknown'));
+    });
+  };
+  reader.onerror=function(){
+    NPD.pdfParsing=false;
+    NPD.pdfFileName='';
+    showModal(projModal());
+    toast('Could not read the file');
+  };
+  reader.readAsArrayBuffer(file);
+}
+/* ═══════ END PDF PARSER ═══════ */
+
+
 function openLib(){showModal(libModal(''));}
 function libModal(q){
   var cats=[...new Set(STD_LIB.map(function(l){return l.cat}))];
