@@ -411,6 +411,7 @@ function renderTopbar(){
   document.getElementById('bill-bar').textContent=p.contractNo?'— '+p.contractNo:'';
   document.getElementById('top-actions').innerHTML=
     '<button class="btn ghost sm" onclick="openLib()">+ Item</button>'+
+    '<button class="btn ghost sm" onclick="openVisual()" title="Visual Measurement Builder — drag shapes to set dimensions">📐 Visual</button>'+
     '<button class="btn sm" onclick="switchTab(\'import\')">Import</button>'+
     '<button class="btn ghost sm" onclick="openEditProject()" title="Edit project settings">⚙</button>'+
     '<button class="btn tl sm" onclick="recordBill()">Record Bill</button>'+
@@ -735,17 +736,10 @@ function openEditProject(){var p=proj();if(!p)return;editId=p.id;NPD={name:p.nam
 function projModal(){
   var isEdit=editId!==null;
   var colorDots=COLORS.map(function(c){return'<div class="cp-dot'+(NPD.color===c?' sel':'')+'" style="background:'+c+'" onclick="npColor(\''+c+'\')"></div>'}).join('');
-  var boqRows=NPD.boq.length?
-    '<div style="background:var(--s);border-radius:6px;padding:9px;max-height:180px;overflow-y:auto;border:1px solid var(--br);margin-bottom:8px">'+
-    NPD.boq.map(function(b,i){return'<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--s2);font-size:11.5px">'+
-      '<span style="font-size:9px;color:var(--k4);min-width:20px;text-align:center;font-family:var(--mono)">'+(i+1)+'</span>'+
-      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(b.desc)+'</span>'+
-      '<span style="font-family:var(--mono);font-size:11px;color:var(--k3);white-space:nowrap">'+b.qty+' '+b.unit+'</span>'+
-      '<span style="font-family:var(--mono);font-size:11px;color:var(--am);white-space:nowrap">'+inr(b.rate)+'</span>'+
-      '<button class="btn xs rd" onclick="npDelBoq('+i+')">✕</button></div>';
-    }).join('')+'</div>':'<div style="text-align:center;padding:10px;color:var(--k4);font-size:11.5px;background:var(--s2);border-radius:6px;margin-bottom:8px">No BOQ items yet</div>';
   return'<div class="mhdr"><span class="mt-m">'+(isEdit?'Edit Project Settings':'New Project')+'</span><button class="btn sm" onclick="closeModal()">\u2715</button></div>'+
     '<div class="mbody" style="min-width:540px;max-width:600px">'+
+
+    '<!-- Project Details -->' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">'+
     '<div class="form-row"><label class="form-label">Project Name *</label><input class="form-input" id="np-name" placeholder="e.g. Atali Water Supply" value="'+esc(NPD.name)+'" oninput="NPD.name=this.value"></div>'+
     '<div class="form-row"><label class="form-label">Contract No.</label><input class="form-input" placeholder="e.g. 2022-23/267" value="'+esc(NPD.contractNo)+'" oninput="NPD.contractNo=this.value"></div></div>'+
@@ -754,47 +748,82 @@ function projModal(){
     '<div class="form-row"><label class="form-label">Engineer / Authority</label><input class="form-input sm" placeholder="Name / Designation" value="'+esc(NPD.engineer)+'" oninput="NPD.engineer=this.value"></div>'+
     '<div class="form-row"><label class="form-label">Contractor</label><input class="form-input sm" placeholder="Contractor name" value="'+esc(NPD.contractor)+'" oninput="NPD.contractor=this.value"></div></div>'+
     '<div class="form-row"><label class="form-label">Project Color</label><div class="color-picker">'+colorDots+'</div></div>'+
-    '<div class="form-row"><label class="form-label">BOQ Items <span style="font-weight:400;color:var(--k4);text-transform:none;font-size:10px">(for limit tracking)</span></label>'+
-    boqRows+
-    '<div style="background:var(--am-bg);border:1px solid var(--am-bd);border-radius:6px;padding:10px 12px;margin-bottom:8px">'+
-    '<div style="font-size:10px;font-weight:600;color:var(--am);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Add BOQ Item Manually</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px">'+
-    '<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Section / Group</div><input class="form-input sm" placeholder="e.g. Civil Works" value="'+esc(NPD.newSec)+'" oninput="NPD.newSec=this.value"></div>'+
-    '<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Description *</div><input class="form-input sm" id="np-desc" placeholder="Item description" value="'+esc(NPD.newDesc)+'" oninput="NPD.newDesc=this.value"></div></div>'+
-    '<div style="display:grid;grid-template-columns:80px 80px 100px auto;gap:7px;align-items:end">'+
-    '<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Qty *</div><input type="number" class="form-input sm" placeholder="0.00" value="'+NPD.newQty+'" oninput="NPD.newQty=this.value"></div>'+
-    '<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Unit</div><select class="form-input sm" onchange="NPD.newUnit=this.value">'+['Cum','Sqm','Rmt','MT','Nos','Sets','BHP','M','Kg','Job','Months','Days','Km'].map(function(u){return'<option'+(NPD.newUnit===u?' selected':'')+'>'+u+'</option>'}).join('')+'</select></div>'+
-    '<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Rate (\u20b9) *</div><input type="number" class="form-input sm" placeholder="0.00" value="'+NPD.newRate+'" oninput="NPD.newRate=this.value"></div>'+
-    '<button class="btn am sm" onclick="npAddBoq()" style="height:30px">+ Add</button></div></div>'+
-    '<div style="background:var(--bl-bg);border:1px solid var(--bl-bd);border-radius:6px;padding:12px 14px" id="pdf-drop-zone">'+
-    '<div style="font-size:10px;font-weight:600;color:var(--bl);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">📄 Upload BOQ PDF — Auto-reads all items</div>'+
-    '<div style="font-size:10.5px;color:var(--k3);margin-bottom:9px;line-height:1.5">Drop your government BOQ / rate schedule PDF here. App reads all items, quantities, units and rates automatically.</div>'+
+
+    '<!-- BOQ SECTION -->' +
+    '<div style="border-top:1px solid var(--br);margin:4px 0 12px;padding-top:14px">'+
+    '<div style="font-size:12px;font-weight:600;color:var(--k);margin-bottom:3px">BOQ / Rate Schedule</div>'+
+    '<div style="font-size:11px;color:var(--k3);margin-bottom:10px">Upload your tender PDF — the app reads all items, quantities and rates automatically. BOQ is optional but enables limit tracking.</div>'+
+
+    // ── PDF UPLOAD (PRIMARY) ──
     (NPD.pdfParsing
-      // ── PARSING IN PROGRESS — show spinner, block everything ──
-      ? '<div style="border:1.5px solid var(--bl-bd);border-radius:6px;padding:20px;text-align:center;background:#fff">'
-        + '<div style="font-size:26px;margin-bottom:8px">⏳</div>'
-        + '<div style="font-size:13px;font-weight:600;color:var(--bl);margin-bottom:4px">Reading PDF…</div>'
-        + '<div style="font-size:11px;color:var(--k3)">Please wait — do not close this window.<br>The <b>Create Project</b> button will unlock when done.</div>'
-        + '</div>'
-      // ── DONE or NOT STARTED ──
-      : '<div id="pdf-upload-area" style="border:1.5px dashed var(--bl-bd);border-radius:6px;padding:16px;text-align:center;cursor:pointer;transition:all .15s;background:#fff" onclick="document.getElementById(\'pdf-file-in\').click()" ondragover="event.preventDefault();this.style.borderColor=\'var(--bl)\'" ondragleave="this.style.borderColor=\'var(--bl-bd)\'" ondrop="npDropPDF(event)">'
-        + (NPD.pdfFileName
-            ? '<div style="font-size:13px;font-weight:600;color:var(--gr)">✓ ' + esc(NPD.pdfFileName) + '</div>'
-              + '<div style="font-size:10.5px;color:var(--k3);margin-top:3px">' + NPD.boq.length + ' items loaded — click to replace with a different PDF</div>'
-            : '<div style="font-size:24px;margin-bottom:6px;opacity:.5">📎</div>'
-              + '<div style="font-size:12px;font-weight:500;color:var(--bl)">Click to browse or drag &amp; drop PDF</div>'
-              + '<div style="font-size:10px;color:var(--k4);margin-top:3px">Government BOQ, rate schedule, tender documents</div>'
-          )
-        + '</div>'
+      ? '<!-- PARSING STATE -->'
+        +'<div style="border:1.5px solid var(--bl-bd);border-radius:8px;padding:22px;text-align:center;background:var(--bl-bg)">'
+        +'<div style="font-size:28px;margin-bottom:10px">⏳</div>'
+        +'<div style="font-size:13px;font-weight:600;color:var(--bl);margin-bottom:5px">Reading your PDF…</div>'
+        +'<div style="font-size:11px;color:var(--k3)">Extracting items, quantities and rates.<br>The <b>Create / Save</b> button will unlock when complete — please wait.</div>'
+        +'</div>'
+      : '<!-- UPLOAD AREA -->'
+        +'<div style="border:2px dashed '+(NPD.pdfFileName?'var(--gr)':'var(--bl-bd)')+';border-radius:8px;padding:20px;text-align:center;cursor:pointer;background:'+(NPD.pdfFileName?'var(--gr-bg)':'var(--bl-bg)')+';transition:all .15s" '
+        +'id="pdf-upload-area" onclick="document.getElementById(\'pdf-file-in\').click()" '
+        +'ondragover="event.preventDefault();this.style.borderColor=\'var(--bl)\'" '
+        +'ondragleave="this.style.borderColor=\''+(NPD.pdfFileName?'var(--gr)':'var(--bl-bd)')+'\'" '
+        +'ondrop="npDropPDF(event)">'
+        +(NPD.pdfFileName
+          ? '<div style="font-size:22px;margin-bottom:7px">✅</div>'
+            +'<div style="font-size:13px;font-weight:600;color:var(--gr);margin-bottom:3px">'+esc(NPD.pdfFileName)+'</div>'
+            +'<div style="font-size:11px;color:var(--gr)"><b>'+NPD.boq.length+' items loaded</b> — scroll down to review</div>'
+            +'<div style="font-size:10px;color:var(--k3);margin-top:6px">Click here to upload a different PDF</div>'
+          : '<div style="font-size:28px;margin-bottom:8px;opacity:.55">📄</div>'
+            +'<div style="font-size:13px;font-weight:600;color:var(--bl);margin-bottom:3px">Click to Upload BOQ PDF</div>'
+            +'<div style="font-size:11px;color:var(--k3)">Or drag &amp; drop your file here</div>'
+            +'<div style="font-size:10px;color:var(--k4);margin-top:5px">Supports government BOQ, rate schedule, tender documents</div>'
+        )
+        +'</div>'
+        +'<div id="pdf-parse-status" style="margin-top:7px;font-size:11px;display:'+(NPD.pdfFileName?'block':'none')+'">'
+        +(NPD.pdfFileName?'<span style="color:var(--gr)">✓ Ready — '+NPD.boq.length+' BOQ items extracted</span>':'')
+        +'</div>'
     )+
     '<input type="file" id="pdf-file-in" accept=".pdf" style="display:none" onchange="npReadPDF(this.files[0])">'+
-    '<div id="pdf-parse-status" style="margin-top:7px;font-size:11px;color:var(--k3);'+(NPD.pdfFileName&&!NPD.pdfParsing?'display:block':'display:none')+'">'+
-      (NPD.pdfFileName&&!NPD.pdfParsing?'<span style="color:var(--gr)">✓ '+NPD.boq.length+' BOQ items ready — scroll up to review or save project</span>':'')
-    +'</div>'+
-    '</div></div>'+
-    '<div style="display:flex;gap:8px;margin-top:4px">'+
-    '<button class="btn am wf" onclick="saveProject()" '+(NPD.pdfParsing?'disabled style="opacity:.45;cursor:not-allowed"':'')+'>'
-      +(NPD.pdfParsing?'⏳ Waiting for PDF…':(isEdit?'Save Changes':'Create Project'))+
+
+    // ── LOADED BOQ LIST ──
+    (NPD.boq.length>0 && !NPD.pdfParsing
+      ? '<div style="margin-top:12px;border:1px solid var(--br);border-radius:7px;overflow:hidden">'
+        +'<div style="padding:8px 12px;background:var(--s2);font-size:10.5px;font-weight:600;color:var(--k3);display:flex;justify-content:space-between;align-items:center">'
+        +'<span>'+NPD.boq.length+' BOQ Items</span>'
+        +'<button class="btn xs ghost" onclick="NPD.boq=[];NPD.pdfFileName=\'\';showModal(projModal())" style="font-size:10px;color:var(--rd)">Clear all</button>'
+        +'</div>'
+        +'<div style="max-height:160px;overflow-y:auto;padding:6px 10px">'
+        +NPD.boq.map(function(b,i){
+          return'<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid var(--s2);font-size:11px">'
+            +'<span style="font-size:9px;color:var(--k4);min-width:18px;font-family:var(--mono)">'+(i+1)+'</span>'
+            +'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--k)">'+esc(b.desc)+'</span>'
+            +'<span style="font-family:var(--mono);font-size:10.5px;color:var(--k3);white-space:nowrap;margin-right:4px">'+b.qty+' '+b.unit+'</span>'
+            +'<span style="font-family:var(--mono);font-size:10.5px;color:var(--am);white-space:nowrap;margin-right:4px">'+inr(b.rate)+'</span>'
+            +'<button class="btn xs rd" onclick="npDelBoq('+i+')" style="padding:1px 6px;flex-shrink:0">✕</button>'
+            +'</div>';
+        }).join('')
+        +'</div></div>'
+      : ''
+    )+
+
+    // ── MANUAL ADD — collapsed behind toggle ──
+    '<details style="margin-top:10px"><summary style="cursor:pointer;font-size:11px;color:var(--k3);padding:6px 0;user-select:none;list-style:none;display:flex;align-items:center;gap:5px">'
+    +'<span style="font-size:10px">▸</span> Add a single item manually (if PDF didn\'t work or to fix a missing item)</summary>'
+    +'<div style="background:var(--s2);border-radius:6px;padding:11px;margin-top:7px">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px">'
+    +'<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Section</div><input class="form-input sm" placeholder="e.g. Civil Works" value="'+esc(NPD.newSec)+'" oninput="NPD.newSec=this.value"></div>'
+    +'<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Description *</div><input class="form-input sm" id="np-desc" placeholder="Item description" value="'+esc(NPD.newDesc)+'" oninput="NPD.newDesc=this.value"></div></div>'
+    +'<div style="display:grid;grid-template-columns:80px 80px 100px auto;gap:7px;align-items:end">'
+    +'<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Qty *</div><input type="number" class="form-input sm" placeholder="0.00" value="'+NPD.newQty+'" oninput="NPD.newQty=this.value"></div>'
+    +'<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Unit</div><select class="form-input sm" onchange="NPD.newUnit=this.value">'+['Cum','Sqm','Rmt','MT','Nos','Sets','BHP','M','Kg','Job','Months','Days','Km'].map(function(u){return'<option'+(NPD.newUnit===u?' selected':'')+'>'+u+'</option>'}).join('')+'</select></div>'
+    +'<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Rate (\u20b9) *</div><input type="number" class="form-input sm" placeholder="0.00" value="'+NPD.newRate+'" oninput="NPD.newRate=this.value"></div>'
+    +'<button class="btn am sm" onclick="npAddBoq()" style="height:30px">+ Add</button></div>'
+    +'</div></details>'
+    +'</div>'+ // end BOQ section
+
+    '<div style="display:flex;gap:8px;margin-top:14px">'+
+    '<button class="btn am wf" onclick="saveProject()" '+(NPD.pdfParsing?'disabled style="opacity:.45;cursor:not-allowed"':'')+'>'+
+      (NPD.pdfParsing?'⏳ Reading PDF — please wait…':(isEdit?'Save Changes':'Create Project'))+
     '</button>'+
     (isEdit?'<button class="btn rd sm" onclick="deleteProject()">Delete Project</button>':'')+
     '</div></div>';
@@ -902,73 +931,96 @@ function npReadPDF(file){
     toast('PDF reader not loaded — check internet connection');
     return;
   }
-  // Lock the modal — disable Create button, show spinner
+
+  // ── THE FIX ──
+  // Do NOT call showModal() here. Calling showModal() destroys and rebuilds
+  // the entire modal DOM while the file-input onchange event is still
+  // propagating. The browser then fires stale events on the newly created
+  // DOM (including the npAddBoq button), causing the spurious "qty" error.
+  // Instead, just update the upload area in-place — no DOM destruction.
   NPD.pdfParsing=true;
   NPD.pdfFileName=file.name;
-  showModal(projModal()); // re-render with spinner + disabled button
 
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  // Update existing upload area to show spinner without rebuilding modal
+  var uploadBox=document.getElementById('pdf-upload-area');
+  if(uploadBox){
+    uploadBox.style.pointerEvents='none';
+    uploadBox.style.cursor='default';
+    uploadBox.innerHTML=
+      '<div style="font-size:26px;margin-bottom:8px">⏳</div>'+
+      '<div style="font-size:13px;font-weight:600;color:var(--bl);margin-bottom:4px">Reading PDF…</div>'+
+      '<div style="font-size:11px;color:var(--k3)">Extracting items, quantities &amp; rates — please wait</div>';
+  }
+  // Disable the Create/Save button in-place
+  var saveBtn=document.querySelector('#modal-ov .btn.am.wf');
+  if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='⏳ Reading PDF — please wait…';}
+
+  // Disable web worker — run PDF.js on main thread (avoids CDN/CSP worker issues)
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc='';
 
   var reader=new FileReader();
+  reader.onerror=function(){
+    NPD.pdfParsing=false; NPD.pdfFileName='';
+    showModal(projModal()); // safe to full-rebuild here (no event in flight)
+    toast('Could not read the file — try again');
+  };
   reader.onload=function(ev){
     var typedArr=new Uint8Array(ev.target.result);
-    window.pdfjsLib.getDocument({data:typedArr}).promise.then(function(pdf){
+    window.pdfjsLib.getDocument({
+      data: typedArr,
+      disableRange: true,
+      disableStream: true,
+      disableAutoFetch: true
+    }).promise.then(function(pdf){
       var pageTexts=new Array(pdf.numPages);
       var pagePromises=[];
       for(var pg=1;pg<=pdf.numPages;pg++){
         (function(pgNum){
-          pagePromises.push(pdf.getPage(pgNum).then(function(page){
-            return page.getTextContent().then(function(tc){
-              // Group by y, sort top-to-bottom, join each line
-              var lineMap={};
-              tc.items.forEach(function(item){
-                var y=Math.round(item.transform[5]);
-                if(!lineMap[y])lineMap[y]=[];
-                lineMap[y].push(item.str);
+          pagePromises.push(
+            pdf.getPage(pgNum).then(function(page){
+              return page.getTextContent().then(function(tc){
+                var lineMap={};
+                tc.items.forEach(function(item){
+                  var y=Math.round(item.transform[5]);
+                  if(!lineMap[y])lineMap[y]=[];
+                  lineMap[y].push(item.str);
+                });
+                var ys=Object.keys(lineMap).map(Number).sort(function(a,b){return b-a;});
+                pageTexts[pgNum-1]=ys.map(function(y){return lineMap[y].join(' ');});
               });
-              var ys=Object.keys(lineMap).map(Number).sort(function(a,b){return b-a;});
-              pageTexts[pgNum-1]=ys.map(function(y){return lineMap[y].join(' ');});
-            });
-          }));
+            })
+          );
         })(pg);
       }
       Promise.all(pagePromises).then(function(){
         var allLines=[].concat.apply([],pageTexts.filter(Boolean));
         var items=parseBOQText(allLines);
-
-        // Clear old PDF items, add new ones (avoid dupes by desc+qty)
-        var existing=NPD.boq.filter(function(b){return !b._fromPDF;}); // keep manual items
-        var newItems=items.map(function(it){it._fromPDF=true;return it;});
-        NPD.boq=existing.concat(newItems);
-        NPD.pdfParsing=false; // unlock
-
-        showModal(projModal()); // re-render with items listed + enabled button
-
-        // Scroll to BOQ list in modal after render
+        var manualItems=NPD.boq.filter(function(b){return !b._fromPDF;});
+        NPD.boq=manualItems.concat(items.map(function(it){it._fromPDF=true;return it;}));
+        NPD.pdfParsing=false;
+        // NOW safe to full-rebuild — no file-input event is in flight
+        showModal(projModal());
         setTimeout(function(){
-          var mbody=document.querySelector('.modal .mbody');
-          if(mbody)mbody.scrollTop=0;
-          var statusEl=document.getElementById('pdf-parse-status');
-          if(statusEl){
-            statusEl.style.display='block';
-            statusEl.innerHTML=items.length>0
-              ?'<span style="color:var(--gr)">✓ <b>'+items.length+' BOQ items</b> extracted from '+esc(file.name)+'</span>'
-              :'<span style="color:var(--or)">⚠ No items found — PDF may be image-based (scanned). Add items manually below.</span>';
+          var el=document.getElementById('pdf-parse-status');
+          if(el){
+            el.style.display='block';
+            el.innerHTML=items.length>0
+              ?'<span style="color:var(--gr)">✓ <b>'+items.length+' BOQ items</b> extracted from "'+esc(file.name)+'" — review and save.</span>'
+              :'<span style="color:var(--or)">⚠ No items detected — PDF may be image/scanned. Add items manually using the form below.</span>';
           }
-        },80);
+          var mb=document.querySelector('.modal .mbody');
+          if(mb)mb.scrollTop=0;
+        },60);
+      }).catch(function(err){
+        NPD.pdfParsing=false; NPD.pdfFileName='';
+        showModal(projModal());
+        toast('Error processing PDF pages: '+(err.message||String(err)));
       });
     }).catch(function(err){
-      NPD.pdfParsing=false;
-      NPD.pdfFileName='';
+      NPD.pdfParsing=false; NPD.pdfFileName='';
       showModal(projModal());
-      toast('Error reading PDF: '+(err.message||'unknown'));
+      toast('Could not open PDF: '+(err.message||String(err)));
     });
-  };
-  reader.onerror=function(){
-    NPD.pdfParsing=false;
-    NPD.pdfFileName='';
-    showModal(projModal());
-    toast('Could not read the file');
   };
   reader.readAsArrayBuffer(file);
 }
@@ -1034,7 +1086,33 @@ function exportPDF(){
   var w=window.open('','_blank','width=950,height=720');if(w){w.document.write(html);w.document.close();setTimeout(function(){w.print()},600);}else toast('Allow popups to export PDF');
 }
 
-/* ═══════ KEYBOARD SHORTCUTS ═══════ */
+/* ═══════ VISUAL BUILDER ═══════ */
+var VB_WIN=null;
+function openVisual(){
+  // Try to open the visual builder file in a new window
+  VB_WIN=window.open('autobill-visual.html','AutoBillVisual','width=960,height=680,resizable=yes');
+  if(!VB_WIN){toast('Allow popups to open Visual Builder');}
+}
+// Receive rows from Visual Builder
+window.addEventListener('message',function(e){
+  if(!e.data||e.data.type!=='autobill-vb-import')return;
+  var p=proj();if(!p)return;
+  var d=e.data.data;
+  // Create new MB item with rows from visual builder
+  var nid='i'+uid();
+  var newItem={
+    id:nid, cat:d.cat||'Misc', name:d.name||'Visual Builder Item',
+    unit:d.unit||'cum', rate:0, boqRef:'',
+    rows:d.rows.map(function(r){return nr({desc:r.desc,nos:r.nos||'1',L:r.L,B:r.B,D:r.D,isDeduct:!!r.isDeduct});})
+  };
+  p.items.push(newItem);
+  p.expanded[nid]=true;
+  saveState();
+  switchTab('mb');
+  toast('✓ Visual Builder rows added to Measurement Book');
+});
+
+
 document.addEventListener('keydown',function(e){
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
   if(e.key==='n'||e.key==='N'){openNewProject();}
