@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AutoBill Civil Pro</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f3ee;--s:#fff;--s2:#f0ede6;--s3:#e6e2da;--br:#d8d4cc;--br2:#b8b4aa;
+  --k:#1a1a18;--k2:#2c2c2a;--k3:#5a5a56;--k4:#9a9990;
+  --am:#c47c0a;--am2:#e89010;--am-bg:#fffbeb;--am-bd:#f5c842;
+  --tl:#0b7a69;--tl2:#0d9488;--tl-bg:#f0fdfa;--tl-bd:#5eead4;
+  --rd:#b83232;--rd-bg:#fef2f2;--rd-bd:#fca5a5;
+  --gr:#1d7a3a;--gr-bg:#f0fdf4;--gr-bd:#86efac;
+  --or:#c2410c;--or-bg:#fff7ed;--or-bd:#fed7aa;
+  --bl:#1d5fa8;--bl-bg:#eff6ff;--bl-bd:#bfdbfe;
+  --sb:#111827;--mono:'Courier New',monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --radius:7px;
+}
+html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--k);font-size:14px}
+button,input,select,textarea{font-family:var(--sans)}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sb{width:232px;background:var(--sb);flex-shrink:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+.sb-logo{padding:14px 13px 12px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:9px}
+.sb-mark{width:28px;height:28px;background:var(--am2);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-name{font-size:12px;font-weight:600;color:#fff}
+.sb-sub{font-size:9px;color:rgba(255,255,255,.3);margin-top:1px}
+.sb-sec{padding:8px 0 2px}
+.sb-lbl{font-size:8px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.28);padding:0 13px 4px}
+.sb-btn{display:flex;align-items:center;gap:7px;padding:6px 13px;font-size:11.5px;cursor:pointer;color:rgba(255,255,255,.58);border:none;background:none;width:100%;text-align:left;transition:all .1s}
+.sb-btn:hover{background:rgba(255,255,255,.06);color:#fff}
+.sb-btn.active{background:rgba(196,124,10,.22);color:#fbbf24;border-left:2px solid var(--am2);padding-left:11px}
+.sb-div{height:1px;background:rgba(255,255,255,.07);margin:5px 0}
+.sb-proj-list{padding:3px 8px 7px}
+.sb-proj-item{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:6px;cursor:pointer;margin-bottom:2px;transition:background .1s;border:1px solid transparent}
+.sb-proj-item:hover{background:rgba(255,255,255,.06)}
+.sb-proj-item.active{background:rgba(196,124,10,.18);border-color:rgba(196,124,10,.3)}
+.sb-proj-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sb-proj-name{font-size:11px;color:rgba(255,255,255,.8);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.sb-proj-meta{font-size:9px;color:rgba(255,255,255,.3)}
+.sb-add-proj{display:flex;align-items:center;gap:6px;padding:6px 9px;border-radius:5px;cursor:pointer;color:rgba(255,255,255,.4);font-size:11px;border:1px dashed rgba(255,255,255,.14);margin:3px 0;background:none;width:100%;transition:all .1s}
+.sb-add-proj:hover{border-color:var(--am-bd);color:#fbbf24;background:rgba(196,124,10,.1)}
+.guard-badge{margin:5px 8px 2px;border-radius:6px;padding:6px 9px;font-size:10.5px;display:none}
+.guard-badge.show{display:block}
+.guard-badge.err{background:rgba(184,50,50,.2);border:1px solid rgba(184,50,50,.35);color:#fca5a5}
+.guard-badge.warn{background:rgba(194,65,12,.18);border:1px solid rgba(194,65,12,.3);color:#fed7aa}
+.guard-badge.ok{background:rgba(13,148,136,.14);border:1px solid rgba(13,148,136,.28);color:#5eead4}
+.guard-title{font-weight:600;font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px}
+.sb-totals{padding:3px 0}
+.sb-tv{padding:4px 13px;display:flex;flex-direction:column;margin-bottom:1px}
+.sb-tl{font-size:8px;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1px}
+.sb-tv-val{font-size:14px;font-weight:500;font-family:var(--mono);color:#fff}
+.sb-tv-val.am{color:#fbbf24}
+.sb-shortcuts{padding:8px 13px 12px;font-size:9.5px;color:rgba(255,255,255,.22);border-top:1px solid rgba(255,255,255,.06);margin-top:auto}
+.sc-row{display:flex;justify-content:space-between;margin-bottom:2px}
+.sc-key{background:rgba(255,255,255,.1);border-radius:3px;padding:1px 5px;font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.4)}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{background:var(--s);border-bottom:1px solid var(--br);padding:0 16px;height:46px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px}
+.ptitle{font-size:13px;font-weight:600;color:var(--k)}
+.psub{font-size:11px;color:var(--k3);white-space:nowrap}
+.tacts{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.content-wrap{flex:1;overflow:auto}
+.content{padding:16px}
+.tabs{display:flex;background:var(--s);border-bottom:1px solid var(--br);padding:0 16px;flex-shrink:0;overflow-x:auto}
+.tab{padding:9px 13px;font-size:11.5px;cursor:pointer;color:var(--k3);border-bottom:2px solid transparent;margin-bottom:-1px;border:none;background:none;white-space:nowrap;transition:all .12s}
+.tab:hover{color:var(--k)}.tab.active{color:var(--am);border-bottom:2px solid var(--am);font-weight:500}
+
+/* ── BUTTONS ── */
+.btn{padding:5px 11px;border-radius:5px;font-size:11px;font-weight:500;cursor:pointer;transition:all .12s;border:1px solid var(--br);background:var(--s);color:var(--k2);white-space:nowrap}
+.btn:hover{background:var(--s2)}.btn.pri{background:var(--k);color:#fff;border-color:var(--k)}.btn.pri:hover{background:var(--k2)}
+.btn.am{background:var(--am);color:#fff;border-color:var(--am)}.btn.am:hover{background:#a56308}
+.btn.tl{background:var(--tl);color:#fff;border-color:var(--tl)}.btn.tl:hover{background:#095e52}
+.btn.rd{background:var(--rd);color:#fff;border-color:var(--rd)}
+.btn.ghost{border-color:transparent;background:transparent}.btn.ghost:hover{background:var(--s2)}
+.btn.sm{padding:3px 9px;font-size:10.5px}.btn.xs{padding:2px 7px;font-size:10px}
+.btn:disabled{opacity:.45;cursor:not-allowed}.wf{width:100%}
+
+/* ── ONBOARDING ── */
+.onboard-wrap{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 46px);padding:24px}
+.onboard-card{background:var(--s);border:1px solid var(--br);border-radius:14px;padding:32px 36px;max-width:520px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.08)}
+.onboard-logo{width:52px;height:52px;background:var(--am2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.onboard-title{font-size:22px;font-weight:600;color:var(--k);margin-bottom:8px}
+.onboard-sub{font-size:13px;color:var(--k3);line-height:1.6;margin-bottom:24px}
+.onboard-features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;text-align:left}
+.onboard-feat{background:var(--s2);border-radius:8px;padding:11px 13px}
+.of-icon{font-size:18px;margin-bottom:5px}
+.of-title{font-size:12px;font-weight:600;color:var(--k);margin-bottom:2px}
+.of-desc{font-size:10.5px;color:var(--k3);line-height:1.4}
+.onboard-start{display:flex;gap:9px;justify-content:center}
+
+/* ── HOME ── */
+.home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px;margin-top:4px}
+.proj-card{background:var(--s);border:1.5px solid var(--br);border-radius:10px;padding:15px;cursor:pointer;transition:all .15s;position:relative}
+.proj-card:hover{border-color:var(--am-bd);box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-1px)}
+.proj-card.active-card{border-color:var(--tl-bd);background:var(--tl-bg)}
+.proj-card-dot{width:10px;height:10px;border-radius:50%;margin-bottom:9px}
+.proj-card-name{font-size:13px;font-weight:600;color:var(--k);margin-bottom:3px}
+.proj-card-meta{font-size:10.5px;color:var(--k3);margin-bottom:9px;line-height:1.5}
+.proj-card-stats{display:flex;gap:11px;font-size:10px;color:var(--k3)}
+.proj-card-stats b{color:var(--k);font-weight:600}
+.proj-card-badge{position:absolute;top:11px;right:11px;font-size:9px;padding:2px 7px;border-radius:10px;font-weight:500}
+.add-proj-card{border-style:dashed;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:120px;color:var(--k3);transition:all .15s;background:transparent}
+.add-proj-card:hover{border-color:var(--am-bd);color:var(--am);background:var(--am-bg)}
+.add-proj-icon{font-size:26px;margin-bottom:7px;opacity:.45}
+
+/* ── CARDS ── */
+.card{background:var(--s);border:1px solid var(--br);border-radius:var(--radius);overflow:hidden}
+.card-h{padding:10px 14px;border-bottom:1px solid var(--br);display:flex;align-items:center;justify-content:space-between}
+.card-t{font-size:12px;font-weight:600;color:var(--k)}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:13px}
+.kpi{background:var(--s);border:1px solid var(--br);border-radius:var(--radius);padding:12px 14px}
+.kpi-l{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--k3);margin-bottom:4px}
+.kpi-v{font-size:19px;font-weight:500;font-family:var(--mono);color:var(--k);line-height:1}
+.kpi-v.am{color:var(--am)}.kpi-v.tl{color:var(--tl)}.kpi-v.rd{color:var(--rd)}
+.kpi-s{font-size:10px;color:var(--k3);margin-top:3px}
+
+/* ── BOQ ── */
+.boq-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:13px}
+.boq-stat{background:var(--s);border:1px solid var(--br);border-radius:var(--radius);padding:12px 14px;display:flex;align-items:center;gap:11px}
+.boq-stat-ico{width:34px;height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.boq-stat-label{font-size:10px;color:var(--k3);margin-bottom:2px}
+.boq-stat-val{font-size:17px;font-weight:500;font-family:var(--mono)}
+.rule-box{background:var(--bl-bg);border:1px solid var(--bl-bd);border-radius:var(--radius);padding:10px 13px;margin-bottom:12px;font-size:11.5px;color:var(--bl);line-height:1.7}
+.boq-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.boq-table th{background:var(--k);color:rgba(255,255,255,.82);padding:7px 10px;font-size:9px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;text-align:left}
+.boq-table th.r{text-align:right}
+.boq-table td{padding:8px 10px;border-bottom:1px solid var(--s2);vertical-align:middle}
+.boq-table td.r{text-align:right;font-family:var(--mono);font-size:11px}
+.boq-table tr:hover td{background:var(--s2)}
+.boq-table tr.over td{background:#fff1f2}.boq-table tr.near td{background:#fffbeb}
+.sp{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;padding:3px 8px;border-radius:10px;font-weight:500;white-space:nowrap}
+.sp-ok{background:var(--gr-bg);color:var(--gr);border:1px solid var(--gr-bd)}
+.sp-near{background:var(--am-bg);color:var(--am);border:1px solid var(--am-bd)}
+.sp-over{background:var(--rd-bg);color:var(--rd);border:1px solid var(--rd-bd)}
+.sp-none{background:var(--s2);color:var(--k3);border:1px solid var(--br)}
+.boq-prog{height:5px;background:var(--s3);border-radius:3px;overflow:hidden;min-width:80px}
+.boq-prog-fill{height:100%;border-radius:3px}
+.bpf-ok{background:var(--tl)}.bpf-near{background:var(--am2)}.bpf-over{background:var(--rd)}
+.boq-sec-hdr{background:var(--am-bg);border:1px solid var(--am-bd);border-radius:5px;padding:6px 11px;margin:9px 0 4px;font-size:10.5px;font-weight:600;color:var(--am)}
+.alert-banner{background:var(--rd-bg);border:1px solid var(--rd-bd);border-radius:var(--radius);padding:10px 13px;margin-bottom:12px;display:flex;gap:9px}
+.ab-t{font-size:12px;font-weight:600;color:var(--rd);margin-bottom:3px}
+.ab-b{font-size:11px;color:var(--k2);line-height:1.6}
+.warn-banner{background:var(--or-bg);border:1px solid var(--or-bd);border-radius:var(--radius);padding:10px 13px;margin-bottom:12px;display:flex;gap:9px}
+.wb-t{font-size:12px;font-weight:600;color:var(--or);margin-bottom:3px}
+
+/* ── MB ── */
+.mb-item{background:var(--s);border:1px solid var(--br);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;transition:box-shadow .15s}
+.mb-item.b-over{border-color:var(--rd-bd);border-width:1.5px}.mb-item.b-near{border-color:var(--am-bd);border-width:1.5px}
+.mb-hdr{padding:8px 12px;display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;transition:background .1s}
+.mb-hdr:hover{background:var(--s2)}
+.inum{font-size:9px;font-family:var(--mono);color:var(--k4);min-width:17px}
+.iname{font-size:12px;font-weight:600;color:var(--k);flex:1}
+.itag{font-size:9px;padding:2px 7px;border-radius:10px;font-weight:500;border:1px solid;white-space:nowrap}
+.t-earth{background:#fff7ed;color:#c2410c;border-color:#fed7aa}.t-conc{background:var(--bl-bg);color:var(--bl);border-color:var(--bl-bd)}
+.t-mas{background:#fdf4ff;color:#86198f;border-color:#e9d5ff}.t-fin{background:var(--gr-bg);color:var(--gr);border-color:var(--gr-bd)}
+.t-stl{background:#f1f5f9;color:#475569;border-color:#cbd5e1}.t-pip{background:var(--tl-bg);color:var(--tl);border-color:var(--tl-bd)}
+.t-misc{background:var(--am-bg);color:var(--am);border-color:var(--am-bd)}.t-ded{background:var(--rd-bg);color:var(--rd);border-color:var(--rd-bd)}
+.itot{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--tl);white-space:nowrap}
+.chev{width:13px;height:13px;transition:transform .2s;color:var(--k4);flex-shrink:0}.chev.open{transform:rotate(90deg)}
+.limit-bar{padding:5px 12px;background:var(--s2);border-bottom:1px solid var(--br);display:flex;align-items:center;gap:9px;font-size:10.5px;flex-wrap:wrap}
+.lb-track{flex:1;min-width:60px;height:5px;background:var(--s3);border-radius:3px;overflow:hidden}
+.lb-fill{height:100%;border-radius:3px;transition:width .4s}
+.boq-link-sel{border:1px solid var(--br);border-radius:4px;padding:2px 6px;font-size:10px;background:var(--s2);color:var(--k3);cursor:pointer;outline:none;max-width:200px}
+.boq-link-sel:focus{border-color:var(--am-bd)}.boq-link-sel.linked{background:var(--tl-bg);color:var(--tl);border-color:var(--tl-bd);font-weight:500}
+.mb-table-wrap{overflow-x:auto}
+.mbt{width:100%;border-collapse:collapse;font-size:11.5px}
+.mbt th{background:var(--s2);padding:5px 8px;text-align:left;font-size:8.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--k3);border-bottom:1px solid var(--br)}
+.mbt th.r{text-align:right}
+.mbt td{padding:0;border-bottom:1px solid var(--s2);vertical-align:middle}.mbt tr:last-child td{border-bottom:none}
+.mbt tr.dr td{background:#fef2f2}.mbt tr.fr td{background:#fffbeb}
+.rn{padding:5px 4px 5px 9px;font-size:9px;color:var(--k4);font-family:var(--mono);text-align:center;min-width:25px;width:25px}
+.ci{width:100%;height:30px;padding:5px 8px;border:none;background:transparent;font-size:11.5px;font-family:var(--sans);color:var(--k);outline:none}
+.ci:focus{background:#fffef5;box-shadow:inset 0 0 0 1.5px var(--am-bd)}.ci.mo{font-family:var(--mono);text-align:right}
+.qtd{padding:5px 8px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--k2);background:var(--s2);white-space:nowrap;min-width:65px}
+.qtd.neg{color:var(--rd)}.qtd.nil{color:var(--k4)}
+.dcell{display:flex;align-items:center;justify-content:center;padding:0 6px;width:34px}
+.dbtn{width:19px;height:19px;border-radius:3px;border:1px solid var(--br2);background:#fff;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:var(--k4);transition:all .12s;font-weight:700;line-height:1}
+.dbtn:hover{border-color:var(--rd);color:var(--rd);background:var(--rd-bg)}.dbtn.on{background:var(--rd);border-color:var(--rd);color:#fff}
+.delbtn{width:21px;height:21px;border:none;background:none;cursor:pointer;color:var(--k4);display:flex;align-items:center;justify-content:center;border-radius:3px;margin:0 3px;transition:all .12s}
+.delbtn:hover{background:var(--rd-bg);color:var(--rd)}
+.movebtn{width:18px;height:18px;border:none;background:none;cursor:pointer;color:var(--k4);display:flex;align-items:center;justify-content:center;border-radius:3px;transition:all .12s;padding:0}
+.movebtn:hover{background:var(--s3);color:var(--k2)}.movebtn:disabled{opacity:.2;cursor:default}
+.mb-foot{padding:6px 12px;display:flex;align-items:center;justify-content:space-between;background:var(--s2);border-top:1px solid var(--br);gap:8px;flex-wrap:wrap}
+.fhint{font-size:9.5px;color:var(--k4);font-family:var(--mono)}
+.nq{display:flex;align-items:center;gap:7px;font-size:11px}
+.nq-lbl{color:var(--k3)}.nq-val{font-family:var(--mono);font-weight:600;font-size:13px;color:var(--tl)}
+.nq-amt{font-size:10.5px;color:var(--k3)}
+
+/* ── BILL ── */
+.bill-layout{display:grid;grid-template-columns:1fr 270px;gap:12px}
+.blt{width:100%;border-collapse:collapse;font-size:11.5px}
+.blt th{background:var(--k);color:rgba(255,255,255,.82);padding:6px 10px;font-size:8.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;text-align:left}
+.blt th:not(:first-child){text-align:right}
+.blt td{padding:8px 10px;border-bottom:1px solid var(--s2);vertical-align:middle}
+.blt td:not(:first-child){text-align:right;font-family:var(--mono);font-size:11px}
+.blt tr:hover td{background:var(--s2)}
+.blt tr.trow td{background:var(--am-bg);border-top:2px solid var(--am-bd);font-weight:600;border-bottom:none;font-size:12px}
+.blt tr.trow td:not(:first-child){color:var(--am)}
+.blt tr.prow td{color:var(--rd)}.blt tr.nrow td{background:var(--tl-bg);font-weight:600;color:var(--tl)}
+.rate-inp{border:1px solid var(--br);border-radius:4px;padding:3px 6px;font-family:var(--mono);font-size:11px;width:82px;text-align:right;background:#fff;color:var(--k);outline:none}
+.rate-inp:focus{border-color:var(--am-bd)}.rate-inp.mis{border-color:var(--rd-bd);background:var(--rd-bg)}
+.hi{border:1px solid var(--br);border-radius:6px;padding:9px 12px;margin-bottom:8px;background:var(--s)}
+.hi.cur{border-color:var(--tl-bd);background:var(--tl-bg)}
+.hi-t{font-size:11px;font-weight:600;margin-bottom:2px}.hi-m{font-size:9.5px;color:var(--k3);display:flex;gap:7px;align-items:center;margin-bottom:5px}
+.hi-a{font-family:var(--mono);font-size:15px;font-weight:500}.hi-a.tl{color:var(--tl)}
+.tag{display:inline-block;font-size:8.5px;padding:2px 6px;border-radius:10px;font-weight:500}
+.tg-gr{background:var(--gr-bg);color:var(--gr);border:1px solid var(--gr-bd)}.tg-am{background:var(--am-bg);color:var(--am);border:1px solid var(--am-bd)}
+.prog-bar{height:4px;background:var(--s3);border-radius:2px;overflow:hidden;margin-top:6px}
+.prog-fill{height:100%;border-radius:2px}
+.pf-am{background:linear-gradient(90deg,var(--am),var(--am2))}.pf-tl{background:linear-gradient(90deg,var(--tl),var(--tl2))}
+
+/* ── IMPORT ── */
+.imp-layout{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.imp-ta{width:100%;min-height:240px;padding:11px;border:1.5px solid var(--br);border-radius:var(--radius);font-family:var(--mono);font-size:11px;color:var(--k);background:#fff;outline:none;resize:vertical;line-height:1.7}
+.imp-ta:focus{border-color:var(--am-bd)}
+.imp-eg{background:var(--am-bg);border:1px solid var(--am-bd);border-radius:6px;padding:10px 12px;margin-bottom:11px}
+.egt{font-weight:600;color:var(--am);font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+.eg-row{font-family:var(--mono);font-size:10px;color:var(--k2);margin-bottom:2px;display:flex;gap:7px}
+.eg-f{color:var(--am);min-width:100px;font-size:9px;font-family:var(--sans);opacity:.75}
+.pp{background:var(--s2);border-radius:var(--radius);padding:11px;min-height:240px}
+.pp-row{display:grid;grid-template-columns:25px 1fr 38px 44px 44px 44px 36px;gap:0;border-bottom:1px solid var(--br);padding:3px 0;align-items:center}
+.pp-row.ph{font-size:8.5px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--k3);background:var(--s3);padding:5px 0;border-radius:4px 4px 0 0}
+.pp-c{padding:0 4px;font-family:var(--mono);font-size:10.5px;color:var(--k2)}.pp-c.d{font-family:var(--sans);font-size:11px;color:var(--k)}
+.sel{border:1px solid var(--br);border-radius:5px;padding:4px 8px;font-size:11px;background:#fff;color:var(--k);cursor:pointer;outline:none;width:100%}
+.sel:focus{border-color:var(--am-bd)}
+
+/* ── EXPORT ── */
+.exp-layout{display:grid;grid-template-columns:1fr 205px;gap:12px}
+.pdf-paper{background:#fff;border:1px solid var(--br);border-radius:6px;padding:18px 20px}
+.pdf-hdr{background:var(--k);padding:9px 0;text-align:center;margin:-18px -20px 13px;border-radius:5px 5px 0 0}
+.pdf-ht{font-size:12px;font-weight:700;letter-spacing:.06em;color:#fff;text-transform:uppercase}
+.pdf-hs{font-size:9px;color:rgba(255,255,255,.5);margin-top:2px}
+.pdf-mg{display:grid;grid-template-columns:1fr 1fr;gap:3px 13px;margin-bottom:12px;font-size:10px}
+.pdf-mr{display:flex;gap:4px}.pdf-mk{color:var(--k3);min-width:72px}.pdf-mv{color:var(--k);font-weight:500}
+.pdf-t{width:100%;border-collapse:collapse;font-size:9.5px;margin-bottom:9px}
+.pdf-t th{border:1px solid var(--k);padding:3px 5px;background:var(--s2);font-weight:600;font-size:8.5px;text-align:center}
+.pdf-t td{border:1px solid var(--br);padding:3px 5px}
+.pdf-t td.r{text-align:right;font-family:var(--mono)}.pdf-t td.c{text-align:center}
+.pdf-t tr.ih td{background:var(--am-bg);font-weight:600;color:var(--am);border-left:2px solid var(--am)}
+.pdf-t tr.tot td{background:var(--s2);font-weight:700;border-top:2px solid var(--br2)}
+.pdf-t tr.net td{background:var(--tl-bg);font-weight:700;color:var(--tl)}
+.pdf-t tr.ded td{color:var(--rd);background:var(--rd-bg)}
+.pdf-sign{display:flex;justify-content:space-between;margin-top:14px;padding-top:9px;border-top:1px dashed var(--br2)}
+.sign-bx{text-align:center;font-size:8.5px;color:var(--k3)}.sign-ln{height:1px;background:var(--k2);width:80px;margin:0 auto 3px}
+.exp-btns{display:flex;flex-direction:column;gap:7px}
+.exp-btn{display:flex;align-items:center;gap:8px;padding:10px 11px;border:1.5px solid var(--br);border-radius:var(--radius);background:#fff;cursor:pointer;transition:all .12s;width:100%}
+.exp-btn:hover{border-color:var(--am-bd);background:var(--am-bg)}
+.exp-btn.pri{background:var(--k);border-color:var(--k)}.exp-btn.pri:hover{background:var(--k2)}
+.eb-ico{width:30px;height:30px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px}
+.eb-t{font-size:11.5px;font-weight:600}.eb-s{font-size:9.5px;color:var(--k3);margin-top:1px}
+.exp-btn.pri .eb-s{color:rgba(255,255,255,.5)}.exp-btn.pri .eb-t{color:#fff}
+
+/* ── MODAL ── */
+.ov{position:fixed;inset:0;background:rgba(17,24,39,.6);z-index:200;display:flex;align-items:center;justify-content:center}
+.modal{background:#fff;border-radius:10px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.mhdr{padding:13px 16px;border-bottom:1px solid var(--br);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.mt-m{font-size:13.5px;font-weight:600}
+.mbody{overflow-y:auto;padding:15px;flex:1}
+.form-row{margin-bottom:12px}
+.form-label{font-size:10.5px;font-weight:600;color:var(--k3);margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:.07em}
+.form-input{width:100%;padding:7px 10px;border:1.5px solid var(--br);border-radius:6px;font-size:13px;color:var(--k);outline:none;transition:border .12s}
+.form-input:focus{border-color:var(--am-bd)}.form-input.sm{font-size:12px;padding:5px 9px}
+.color-picker{display:flex;gap:7px;flex-wrap:wrap}
+.cp-dot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .12s}
+.cp-dot.sel{border-color:var(--k);transform:scale(1.15)}
+
+/* ── SAVE INDICATOR ── */
+.save-pill{position:fixed;bottom:18px;right:18px;background:#111827;color:#fff;font-size:11px;padding:7px 14px;border-radius:20px;display:flex;align-items:center;gap:6px;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none}
+.save-dot{width:7px;height:7px;border-radius:50%;background:#5eead4;flex-shrink:0}
+
+/* ── MISC ── */
+.notice{background:var(--tl-bg);border:1px solid var(--tl-bd);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--tl)}
+.warn-box{background:var(--rd-bg);border:1px solid var(--rd-bd);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--rd)}
+.sec-t{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--k3);margin-bottom:8px}
+.empty{text-align:center;padding:40px 20px;color:var(--k3)}
+.empty-i{font-size:36px;margin-bottom:9px;opacity:.35}.empty-t{font-size:13px;font-weight:500;color:var(--k);margin-bottom:5px}.empty-s{font-size:11.5px;margin-bottom:13px}
+.mb10{margin-bottom:10px}.mb13{margin-bottom:13px}.mt8{margin-top:8px}.mt10{margin-top:10px}
+@media print{.sb,.topbar,.tabs,.tacts,.exp-btns,.save-pill{display:none!important}.app{display:block}.content-wrap{overflow:visible}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sb" id="sidebar"></div>
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:8px;min-width:0">
+        <span class="ptitle" id="title-bar">AutoBill Civil Pro</span>
+        <span class="psub" id="bill-bar"></span>
+      </div>
+      <div class="tacts" id="top-actions"></div>
+    </div>
+    <div class="tabs" id="tabs-bar"></div>
+    <div class="content-wrap"><div class="content" id="main-content"></div></div>
+  </div>
+</div>
+<div class="ov" id="modal-ov" style="display:none" onclick="if(event.target===this)closeModal()"></div>
+<div class="save-pill" id="save-pill"><div class="save-dot"></div><span>Saved</span></div>
+
+<script>
+'use strict';
+/* ═══════ HELPERS ═══════ */
+function uid(){return Math.random().toString(36).slice(2,8)}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function inr(n){return '\u20b9'+Math.round(n).toLocaleString('en-IN')}
+function nr(o){return Object.assign({id:uid(),desc:'',nos:'',L:'',B:'',D:'',isDeduct:false},o||{})}
+function evalF(v){
+  if(v===''||v===null)return null;
+  var s=String(v).trim().replace(/\u03c0|pi/gi,String(Math.PI));
+  if(!s||s==='0')return 0;
+  try{var r=Function('"use strict";return('+s+')')();return isFinite(r)?+r.toFixed(6):null}catch(e){return parseFloat(v)||0}
+}
+function calcQ(row){
+  var n=evalF(row.nos);if(n===null)n=1;
+  var l=evalF(row.L);if(l===null)l=0;
+  var b=evalF(row.B);if(b===null)b=1;
+  var d=evalF(row.D);if(d===null)d=1;
+  if(l===0&&b===1&&d===1)return null;
+  return +(n*l*b*d).toFixed(3);
+}
+function netQ(item){
+  var t=0;item.rows.forEach(function(r){var q=calcQ(r);if(q!==null)t+=r.isDeduct?-q:q;});
+  return +Math.max(0,t).toFixed(3);
+}
+const COLORS=['#c47c0a','#0b7a69','#1d5fa8','#86198f','#c2410c','#e11d48','#0369a1','#15803d','#b45309','#7c3aed'];
+const CAT_TAG={Earthwork:'t-earth',Concrete:'t-conc',Masonry:'t-mas',Finishing:'t-fin',Steel:'t-stl',Pipeline:'t-pip',Misc:'t-misc'};
+const STD_LIB=[
+  {id:'exc',cat:'Earthwork',name:'Excavation in Foundation',unit:'Cum',rate:464},
+  {id:'pcc',cat:'Concrete',name:'PCC M150 in Foundation',unit:'Cum',rate:6771.29},
+  {id:'rcc_col',cat:'Concrete',name:'RCC M300 in Columns',unit:'Cum',rate:10206.85},
+  {id:'rcc_sl',cat:'Concrete',name:'RCC M250 in Beams/Slabs',unit:'Cum',rate:9795.85},
+  {id:'bw_sup',cat:'Masonry',name:'Brickwork in Superstructure CM 1:6',unit:'Cum',rate:8559.97},
+  {id:'plstr',cat:'Finishing',name:'Plaster 12mm (1:3)',unit:'Sqm',rate:274.69},
+  {id:'steel',cat:'Steel',name:'Reinforcement Steel Tor Fe500',unit:'MT',rate:97206},
+  {id:'pvc_90',cat:'Pipeline',name:'PVC Pipe 90mm 4kg (Supply)',unit:'Rmt',rate:197},
+  {id:'pvc_160',cat:'Pipeline',name:'PVC Pipe 160mm 6kg (Supply)',unit:'Rmt',rate:956},
+  {id:'ref_trench',cat:'Earthwork',name:'Refilling Trenches',unit:'Cum',rate:84},
+  {id:'dewater',cat:'Misc',name:'Dewatering',unit:'BHP',rate:77},
+  {id:'railing',cat:'Misc',name:'GI Railing 1m height',unit:'Rmt',rate:916},
+];
+
+/* ═══════ STATE + PERSISTENCE ═══════ */
+var APP = {activeProjectId:null,projects:[]};
+var saveTimer=null;
+function saveState(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(function(){
+    try{localStorage.setItem('autobill_v2',JSON.stringify(APP));}catch(e){}
+    var pill=document.getElementById('save-pill');
+    pill.style.opacity='1';
+    setTimeout(function(){pill.style.opacity='0';},1800);
+  },600);
+}
+function loadState(){
+  try{
+    var raw=localStorage.getItem('autobill_v2');
+    if(raw){var saved=JSON.parse(raw);APP=saved;return true;}
+  }catch(e){}
+  return false;
+}
+function hasSavedData(){return !!localStorage.getItem('autobill_v2');}
+
+/* ═══════ PROJECT HELPERS ═══════ */
+function proj(){return APP.projects.find(function(p){return p.id===APP.activeProjectId})}
+function gt(p){p=p||proj();if(!p)return 0;return p.items.reduce(function(s,it){return s+netQ(it)*it.rate},0)}
+function pa(p){p=p||proj();if(!p)return 0;return p.bills.length?p.bills[p.bills.length-1].grossAmount:0}
+function nt(p){p=p||proj();return Math.max(0,gt(p)-pa(p))}
+function getBoq(bid){var p=proj();return p&&p.boq?(p.boq.find(function(b){return b.id===bid})||null):null}
+function boqStatus(item,p){
+  p=p||proj();
+  if(!item.boqRef)return{status:'unlinked',pct:0};
+  var b=(p.boq||[]).find(function(b2){return b2.id===item.boqRef});
+  if(!b)return{status:'unlinked',pct:0};
+  var used=netQ(item),max=b.qty,pct=max>0?used/max*100:0;
+  var rateMis=Math.abs(item.rate-b.rate)>0.5;
+  if(used>max)return{status:'over',pct:pct,msg:'EXCEEDS by '+(used-max).toFixed(3)+' '+item.unit,b:b,rateMis};
+  if(pct>=90)return{status:'near',pct:pct,msg:pct.toFixed(1)+'% used',b:b,rateMis};
+  return{status:'ok',pct:pct,msg:pct.toFixed(1)+'% used',b:b,rateMis};
+}
+function issues(p){
+  p=p||proj();if(!p)return{over:0,near:0,rm:0};
+  var over=0,near=0,rm=0;
+  p.items.forEach(function(it){var s=boqStatus(it,p);if(s.status==='over')over++;else if(s.status==='near')near++;if(s.rateMis)rm++;});
+  return{over,near,rm};
+}
+function makeProject(o){
+  return Object.assign({id:'proj_'+uid(),name:'',contractNo:'',location:'',engineer:'',contractor:'',color:'#0b7a69',boq:[],tab:'dashboard',expanded:{},bills:[],importText:'',importTarget:'',items:[]},o||{});
+}
+
+/* ═══════ RENDER ENGINE ═══════ */
+function render(){renderSB();renderTopbar();renderTabs();renderContent();}
+function switchTab(t){var p=proj();if(p){p.tab=t;saveState();}render();}
+function switchProject(id){APP.activeProjectId=id;saveState();render();}
+function dirty(){saveState();renderSB();renderTabs();}
+
+function renderTopbar(){
+  var p=proj();
+  if(!p){
+    document.getElementById('title-bar').textContent='AutoBill Civil Pro';
+    document.getElementById('bill-bar').textContent='';
+    document.getElementById('top-actions').innerHTML='<button class="btn am sm" onclick="openNewProject()">+ New Project</button>';
+    return;
+  }
+  document.getElementById('title-bar').textContent=p.name;
+  document.getElementById('bill-bar').textContent=p.contractNo?'— '+p.contractNo:'';
+  document.getElementById('top-actions').innerHTML=
+    '<button class="btn ghost sm" onclick="openLib()">+ Item</button>'+
+    '<button class="btn sm" onclick="switchTab(\'import\')">Import</button>'+
+    '<button class="btn ghost sm" onclick="openEditProject()" title="Edit project settings">⚙</button>'+
+    '<button class="btn tl sm" onclick="recordBill()">Record Bill</button>'+
+    '<button class="btn am sm" onclick="exportPDF()">Export PDF</button>';
+}
+function renderTabs(){
+  var p=proj();
+  if(!p){document.getElementById('tabs-bar').innerHTML='';return;}
+  var iss=issues(p);
+  var tabs=[['dashboard','Dashboard'],['boq','BOQ Guard'],['mb','Measurement Book'],['bill','Abstract'],['import','Smart Import'],['export','Export']];
+  document.getElementById('tabs-bar').innerHTML=tabs.map(function(x){
+    var dot=x[0]==='boq'&&(iss.over>0||iss.near>0)?'<span style="width:5px;height:5px;border-radius:50%;background:'+(iss.over>0?'var(--rd)':'var(--am)')+';display:inline-block;margin-left:4px;vertical-align:middle"></span>':'';
+    return'<button class="tab'+(p.tab===x[0]?' active':'')+'" onclick="switchTab(\''+x[0]+'\')">'+x[1]+dot+'</button>';
+  }).join('');
+}
+function renderSB(){
+  var p=proj();var iss=p?issues(p):{over:0,near:0,rm:0};
+  var guard='';
+  if(p&&p.boq&&p.boq.length){
+    if(iss.over>0)guard='<div class="guard-badge show err"><div class="guard-title">\u26a0 BOQ Exceeded</div>'+iss.over+' item'+(iss.over>1?'s':'')+' over limit</div>';
+    else if(iss.near>0)guard='<div class="guard-badge show warn"><div class="guard-title">\u26a1 Near Limit</div>'+iss.near+' item'+(iss.near>1?'s':'')+' at 90%+</div>';
+    else if(p.items.some(function(it){return it.boqRef}))guard='<div class="guard-badge show ok"><div class="guard-title">\u2713 BOQ Clear</div>All items within limits</div>';
+  }
+  var projListHTML=APP.projects.map(function(pr){
+    var iss2=issues(pr);
+    return'<div class="sb-proj-item'+(pr.id===APP.activeProjectId?' active':'')+'" onclick="switchProject(\''+pr.id+'\')">'+
+      '<div class="sb-proj-dot" style="background:'+pr.color+'"></div>'+
+      '<div style="flex:1;min-width:0"><div class="sb-proj-name">'+esc(pr.name)+'</div><div class="sb-proj-meta">'+(pr.contractNo||'No contract no.')+'</div></div>'+
+      (iss2.over>0?'<span style="width:7px;height:7px;border-radius:50%;background:var(--rd);flex-shrink:0"></span>':'')+'</div>';
+  }).join('');
+  var navHTML=p?[['dashboard','Dashboard'],['boq','BOQ Guard'],['mb','Measurement Book'],['bill','Abstract of Cost'],['import','Smart Import'],['export','Export']].map(function(x){return'<button class="sb-btn'+(p.tab===x[0]?' active':'')+'" onclick="switchTab(\''+x[0]+'\')">'+x[1]+'</button>'}).join(''):'';
+  var totals=p?'<div class="sb-totals"><div class="sb-tv"><div class="sb-tl">Gross Amount</div><div class="sb-tv-val am">'+inr(gt(p))+'</div></div><div class="sb-tv" style="padding-bottom:3px"><div class="sb-tl">Net This Bill</div><div class="sb-tv-val">'+inr(nt(p))+'</div></div></div>':'';
+  document.getElementById('sidebar').innerHTML=
+    '<div class="sb-logo"><div class="sb-mark"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="1.5" width="11" height="11" rx="1.5" stroke="#fff" stroke-width="1.5"/><path d="M4 5h6M4 7.5h4M4 10h3" stroke="#fff" stroke-width="1.2"/></svg></div><div><div class="sb-name">AutoBill Civil Pro</div><div class="sb-sub">v2.0 \u2014 Multi-Project</div></div></div>'+
+    '<div class="sb-sec"><div class="sb-lbl">Projects ('+APP.projects.length+')</div><div class="sb-proj-list">'+projListHTML+
+    '<button class="sb-add-proj" onclick="openNewProject()"><span style="font-size:14px;line-height:1">+</span> New Project</button></div></div>'+
+    '<div class="sb-div"></div>'+
+    (p?'<div class="sb-sec"><div class="sb-lbl">Navigation</div>'+navHTML+'</div>'+guard+totals:'')+
+    '<div class="sb-shortcuts"><div style="margin-bottom:4px;color:rgba(255,255,255,.3);font-size:9px;text-transform:uppercase;letter-spacing:.1em">Shortcuts</div>'+
+    [['N','New Project'],['R','Record Bill'],['E','Export PDF']].map(function(x){return'<div class="sc-row"><span style="color:rgba(255,255,255,.35)">'+x[1]+'</span><span class="sc-key">'+x[0]+'</span></div>'}).join('')+
+    '</div>';
+}
+function renderContent(){
+  var p=proj();var el=document.getElementById('main-content');
+  if(!p){el.innerHTML=APP.projects.length===0?renderOnboard():renderHome();return;}
+  if(p.tab==='dashboard'){el.innerHTML=renderDash(p);initChart(p);}
+  else if(p.tab==='boq')el.innerHTML=renderBOQ(p);
+  else if(p.tab==='mb')el.innerHTML=renderMB(p);
+  else if(p.tab==='bill')el.innerHTML=renderBill(p);
+  else if(p.tab==='import'){el.innerHTML=renderImport(p);hookImport(p);}
+  else if(p.tab==='export')el.innerHTML=renderExport(p);
+}
+
+/* ═══════ ONBOARDING ═══════ */
+function renderOnboard(){
+  return'<div class="onboard-wrap"><div class="onboard-card">'+
+    '<div class="onboard-logo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#fff" stroke-width="2"/><path d="M7 9h10M7 13h7M7 17h5" stroke="#fff" stroke-width="1.8"/></svg></div>'+
+    '<div class="onboard-title">AutoBill Civil Pro</div>'+
+    '<div class="onboard-sub">Professional Measurement Book &amp; RA Bill software for civil contractors and engineers. Works 100% offline in your browser.</div>'+
+    '<div class="onboard-features">'+
+    [['📐','Measurement Book','Enter L×B×D, auto-calculates quantities with formula support'],['📋','BOQ Guard','Upload your tender BOQ — get alerted before you exceed limits'],['🧾','RA Bills','Running bill logic with previous bill deduction built in'],['📄','PDF Export','Government-format MB with abstract, signatures &amp; SD/IT deductions']].map(function(f){return'<div class="onboard-feat"><div class="of-icon">'+f[0]+'</div><div class="of-title">'+f[1]+'</div><div class="of-desc">'+f[2]+'</div></div>'}).join('')+
+    '</div>'+
+    '<div class="onboard-start">'+
+    '<button class="btn am" style="padding:10px 24px;font-size:13px" onclick="openNewProject()">+ Create First Project</button>'+
+    '</div>'+
+    '<div style="margin-top:14px;font-size:10.5px;color:var(--k4)">Your data is saved automatically in your browser. Nothing leaves your device.</div>'+
+    '</div></div>';
+}
+
+/* ═══════ HOME ═══════ */
+function renderHome(){
+  var cards=APP.projects.map(function(pr){
+    var iss=issues(pr);var g=gt(pr);
+    var statusCls=iss.over>0?'sp-over':iss.near>0?'sp-near':'sp-ok';
+    var statusTxt=iss.over>0?iss.over+' exceeded':iss.near>0?iss.near+' near limit':'All clear';
+    return'<div class="proj-card'+(pr.id===APP.activeProjectId?' active-card':'')+'" onclick="switchProject(\''+pr.id+'\')">'+
+      '<div class="proj-card-badge tag '+statusCls+'">'+statusTxt+'</div>'+
+      '<div class="proj-card-dot" style="background:'+pr.color+'"></div>'+
+      '<div class="proj-card-name">'+esc(pr.name)+'</div>'+
+      '<div class="proj-card-meta">'+(pr.contractNo?'Contract: '+pr.contractNo+'<br>':'')+(pr.location||'')+'</div>'+
+      '<div class="proj-card-stats"><div><b>'+pr.items.length+'</b> items</div><div><b>'+pr.bills.length+'</b> bills</div><div><b>'+(pr.boq?pr.boq.length:0)+'</b> BOQ</div><div><b>'+inr(g)+'</b></div></div></div>';
+  }).join('');
+  return'<div style="margin-bottom:14px"><div style="font-size:18px;font-weight:600;color:var(--k);margin-bottom:3px">All Projects</div><div style="font-size:12px;color:var(--k3)">Select a project to continue, or create a new one.</div></div>'+
+    '<div class="home-grid">'+cards+'<div class="proj-card add-proj-card" onclick="openNewProject()"><div class="add-proj-icon">+</div><div style="font-size:12px;font-weight:500">New Project</div></div></div>';
+}
+
+/* ═══════ DASHBOARD ═══════ */
+function renderDash(p){
+  var g=gt(p),p2=pa(p),n=nt(p);var iss=issues(p);
+  var catMap={};p.items.forEach(function(it){var c=it.cat||'Misc';catMap[c]=(catMap[c]||0)+(netQ(it)*it.rate);});
+  var cats=Object.keys(catMap);
+  var boqTotal=p.boq?p.boq.reduce(function(s,b){return s+b.qty*b.rate},0):0;
+  var legHTML=cats.map(function(c,i){return'<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--s2);font-size:11.5px"><span style="width:8px;height:8px;border-radius:50%;background:'+COLORS[i%COLORS.length]+';flex-shrink:0"></span><span style="flex:1;color:var(--k2)">'+c+'</span><span style="font-family:var(--mono);font-size:11px;color:var(--k3)">'+inr(catMap[c])+'</span><span style="font-size:10px;color:var(--k4)">'+( g?Math.round(catMap[c]/g*100):0)+'%</span></div>'}).join('');
+  var alerts=(iss.over>0?'<div class="alert-banner"><div style="font-size:18px;flex-shrink:0">\uD83D\uDEAB</div><div><div class="ab-t">'+iss.over+' Item'+(iss.over>1?'s':'')+' Exceed BOQ Quantity</div><div class="ab-b">Go to BOQ Guard tab for details and fix.</div></div></div>':'')+(iss.near>0?'<div class="warn-banner"><div style="font-size:18px;flex-shrink:0">\u26A1</div><div><div class="wb-t">'+iss.near+' Item'+(iss.near>1?'s':'')+' Approaching BOQ Limit</div></div></div>':'');
+  return(alerts?'<div style="margin-bottom:12px">'+alerts+'</div>':'')+
+  '<div class="kpi-row">'+
+  '<div class="kpi"><div class="kpi-l">Gross Bill Amount</div><div class="kpi-v am">'+inr(g)+'</div><div class="kpi-s">Bill #'+(p.bills.length+1)+' Draft</div></div>'+
+  '<div class="kpi"><div class="kpi-l">BOQ Tender Amt</div><div class="kpi-v">'+(boqTotal>0?inr(boqTotal):'N/A')+'</div><div class="kpi-s">'+(p.boq&&p.boq.length?p.boq.length+' BOQ items':'No BOQ loaded')+'</div></div>'+
+  '<div class="kpi"><div class="kpi-l">BOQ Violations</div><div class="kpi-v '+(iss.over>0?'rd':'tl')+'">'+iss.over+'</div><div class="kpi-s">'+(iss.over>0?iss.over+' over limit':'All within limits')+'</div></div>'+
+  '<div class="kpi"><div class="kpi-l">Rate Mismatches</div><div class="kpi-v '+(iss.rm>0?'rd':'tl')+'">'+iss.rm+'</div><div class="kpi-s">'+(iss.rm>0?iss.rm+' need fixing':'All match BOQ')+'</div></div></div>'+
+  '<div style="display:grid;grid-template-columns:1.1fr 1fr;gap:11px">'+
+  '<div class="card"><div class="card-h"><span class="card-t">Cost by Category</span></div><div style="padding:13px;display:flex;gap:13px;align-items:center"><canvas id="cc" width="160" height="160" style="flex-shrink:0"></canvas><div style="flex:1">'+legHTML+'</div></div></div>'+
+  '<div class="card"><div class="card-h"><span class="card-t">Item Progress</span>'+(p.boq&&p.boq.length?'<span style="font-size:10px;color:var(--k3)">vs BOQ limit</span>':'')+'</div><div style="padding:12px 13px">'+
+  p.items.map(function(it,i){var st=boqStatus(it,p);var col=st.status==='over'?'var(--rd)':st.status==='near'?'var(--am)':'var(--tl)';var pct=Math.min(100,st.pct||0);return'<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--s2)"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:11.5px;color:var(--k);font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px">'+esc(it.name)+'</span><span style="font-family:var(--mono);font-size:10px;color:var(--k3)">'+netQ(it).toFixed(2)+' '+it.unit+'</span></div><div style="display:flex;gap:7px;align-items:center"><div style="flex:1;height:4px;background:var(--s3);border-radius:2px;overflow:hidden"><div style="height:100%;border-radius:2px;background:'+col+';width:'+pct+'%"></div></div><span style="font-family:var(--mono);font-size:10.5px;color:'+col+'">'+inr(netQ(it)*it.rate)+'</span></div></div>';}).join('')+
+  '</div></div></div>';
+}
+function initChart(p){
+  var cv=document.getElementById('cc');if(!cv)return;
+  var ctx=cv.getContext('2d');var catMap={};
+  p.items.forEach(function(it){var c=it.cat||'Misc';catMap[c]=(catMap[c]||0)+(netQ(it)*it.rate);});
+  var vals=Object.values(catMap);var total=vals.reduce(function(a,b){return a+b},0);
+  var cx=80,cy=80,R=68,ri=44;ctx.clearRect(0,0,160,160);
+  var ang=-Math.PI/2;
+  vals.forEach(function(v,i){var sw=(total?v/total:1/vals.length)*2*Math.PI;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,ang,ang+sw);ctx.closePath();ctx.fillStyle=COLORS[i%COLORS.length];ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ang+=sw;});
+  ctx.beginPath();ctx.arc(cx,cy,ri,0,2*Math.PI);ctx.fillStyle='#fff';ctx.fill();
+  ctx.fillStyle='#1a1a18';ctx.textAlign='center';ctx.textBaseline='middle';
+  var lab=total>=1e7?('\u20b9'+(total/1e7).toFixed(1)+'Cr'):('\u20b9'+(total/1e5).toFixed(1)+'L');
+  ctx.font='bold 11px Courier New';ctx.fillText(lab,cx,cy-5);
+  ctx.font='9px -apple-system,sans-serif';ctx.fillStyle='#5a5a56';ctx.fillText('Total',cx,cy+7);
+}
+
+/* ═══════ BOQ GUARD ═══════ */
+function renderBOQ(p){
+  var iss=issues(p);
+  var hdr='<div class="boq-stats">'+
+    '<div class="boq-stat"><div class="boq-stat-ico" style="background:'+(iss.over>0?'var(--rd-bg)':'var(--gr-bg)')+'">'+(iss.over>0?'🚫':'✅')+'</div><div><div class="boq-stat-label">Qty Violations</div><div class="boq-stat-val" style="color:'+(iss.over>0?'var(--rd)':'var(--gr)')+'">'+iss.over+'</div></div></div>'+
+    '<div class="boq-stat"><div class="boq-stat-ico" style="background:'+(iss.near>0?'var(--am-bg)':'var(--gr-bg)')+'">'+(iss.near>0?'⚡':'✅')+'</div><div><div class="boq-stat-label">Near Limit (90%+)</div><div class="boq-stat-val" style="color:'+(iss.near>0?'var(--am)':'var(--gr)')+'">'+iss.near+'</div></div></div>'+
+    '<div class="boq-stat"><div class="boq-stat-ico" style="background:'+(iss.rm>0?'var(--rd-bg)':'var(--gr-bg)')+'">'+(iss.rm>0?'💱':'✅')+'</div><div><div class="boq-stat-label">Rate Mismatches</div><div class="boq-stat-val" style="color:'+(iss.rm>0?'var(--rd)':'var(--gr)')+'">'+iss.rm+'</div></div></div></div>';
+  var ruleBox='<div class="rule-box mb13"><b style="display:block;margin-bottom:3px">📋 Two Government Contract Rules — BOQ Guard enforces both</b>'+
+    '1. <b>Rate must match the BOQ approved rate</b> — billing at a different rate causes bill rejection.<br>'+
+    '2. <b>Measured quantity cannot exceed the BOQ approved quantity</b> — cumulative across all bills.</div>';
+  var linked=p.items.filter(function(it){return it.boqRef});
+  var linkedTable=linked.length?'<div class="card mb13"><div class="card-h"><span class="card-t">Your Items vs BOQ</span><button class="btn sm ghost" onclick="switchTab(\'mb\')">Link more →</button></div>'+
+    '<table class="boq-table"><thead><tr><th>#</th><th>Your Item</th><th class="r">BOQ Qty</th><th class="r">Measured</th><th style="width:110px">Progress</th><th class="r">BOQ Rate</th><th class="r">Your Rate</th><th>Status</th></tr></thead><tbody>'+
+    linked.map(function(it,i){
+      var st=boqStatus(it,p);var b=st.b;
+      var pct=Math.min(100,st.pct||0);var fc=st.status==='over'?'bpf-over':st.status==='near'?'bpf-near':'bpf-ok';
+      var rc=st.status==='over'?'over':st.status==='near'?'near':'';
+      var sc=st.status==='over'?'sp-over':st.status==='near'?'sp-near':'sp-ok';
+      var stxt=st.status==='over'?'EXCEEDED':st.status==='near'?'NEAR LIMIT':'OK';
+      return'<tr class="'+rc+'"><td style="text-align:center;font-size:9.5px;color:var(--k4);font-family:var(--mono)">'+(i+1)+'</td>'+
+        '<td><div style="font-size:11.5px;font-weight:500">'+esc(it.name)+'</div><div style="font-size:9.5px;color:var(--k3)">'+(b?esc(b.desc):'')+'</div></td>'+
+        '<td class="r">'+(b?b.qty.toFixed(3):'—')+'</td>'+
+        '<td class="r" style="color:'+(st.status==='over'?'var(--rd)':st.status==='near'?'var(--am)':'var(--k)')+'">'+netQ(it).toFixed(3)+'</td>'+
+        '<td><div class="boq-prog"><div class="boq-prog-fill '+fc+'" style="width:'+pct+'%"></div></div><div style="font-size:9.5px;color:var(--k3);margin-top:2px">'+pct.toFixed(1)+'%</div></td>'+
+        '<td class="r">'+(b?inr(b.rate):'—')+'</td>'+
+        '<td class="r" style="color:'+(st.rateMis?'var(--rd)':'var(--k)')+'">'+inr(it.rate)+'</td>'+
+        '<td><span class="sp '+sc+'">'+stxt+'</span>'+(st.rateMis?'<div style="font-size:9px;color:var(--rd);margin-top:2px">Rate mismatch</div>':'')+'</td></tr>';
+    }).join('')+'</tbody></table></div>':'';
+  var sections=[...new Set((p.boq||[]).map(function(b){return b.sec}))];
+  var boqRef=p.boq&&p.boq.length?'<div class="sec-t">Full BOQ Reference ('+p.boq.length+' items)</div><div class="card">'+
+    '<table class="boq-table"><thead><tr><th>#</th><th>Description</th><th class="r">Qty</th><th>Unit</th><th class="r">Rate (\u20b9)</th><th class="r">Amount (\u20b9)</th><th>Linked</th></tr></thead><tbody>'+
+    sections.map(function(sec){return'<tr><td colspan="7" style="padding:0"><div class="boq-sec-hdr">'+esc(sec)+'</div></td></tr>'+
+      p.boq.filter(function(b){return b.sec===sec}).map(function(b){
+        var lnk=p.items.find(function(it){return it.boqRef===b.id});
+        return'<tr style="'+(lnk?'background:var(--tl-bg)':'')+'">'+
+          '<td style="font-family:var(--mono);font-size:9.5px;color:var(--k4);text-align:center">'+b.id+'</td>'+
+          '<td style="font-size:11.5px">'+esc(b.desc)+'</td>'+
+          '<td class="r">'+b.qty.toLocaleString()+'</td><td style="font-size:10.5px;color:var(--k3)">'+b.unit+'</td>'+
+          '<td class="r">'+inr(b.rate)+'</td><td class="r">'+inr(b.qty*b.rate)+'</td>'+
+          '<td style="font-size:10px">'+(lnk?'<span style="color:var(--tl);font-weight:500">\u2714 '+esc(lnk.name.substring(0,20))+'</span>':'<span style="color:var(--k4)">—</span>')+'</td></tr>';
+      }).join('')}).join('')+'</tbody></table></div>'
+    :'<div class="empty"><div class="empty-i">📋</div><div class="empty-t">No BOQ Loaded</div><div class="empty-s">Add BOQ items when editing this project to enable limit tracking</div><button class="btn am" onclick="openEditProject()">Edit Project / Add BOQ</button></div>';
+  return hdr+ruleBox+linkedTable+boqRef;
+}
+
+/* ═══════ MB ═══════ */
+function renderMB(p){
+  if(!p.items.length)return'<div class="empty"><div class="empty-i">📐</div><div class="empty-t">No Items Yet</div><div class="empty-s">Add items from the standard library to start</div><button class="btn am" onclick="openLib()">Open Item Library</button></div>';
+  var ntc='<div class="notice mb13" style="font-size:11px"><b>Formula support:</b> <code style="background:rgba(0,0,0,.06);padding:1px 4px;border-radius:3px">pi*r*r</code> for circles, <code style="background:rgba(0,0,0,.06);padding:1px 4px;border-radius:3px">0.5*b*h</code> for triangles. Click <b style="color:var(--rd)">−</b> to mark deductions. Use the dropdown to link each item to its BOQ reference for limit tracking. Use ↑↓ arrows to reorder rows.</div>';
+  var html=p.items.map(function(item,idx){
+    var nq=netQ(item);var st=boqStatus(item,p);
+    var bClass=st.status==='over'?'b-over':st.status==='near'?'b-near':'';
+    var ct=CAT_TAG[item.cat]||'t-misc';var open=p.expanded[item.id];
+    var limitBar='';
+    if(item.boqRef&&st.b){
+      var pct=Math.min(110,st.pct||0);var fc=st.status==='over'?'bpf-over':st.status==='near'?'bpf-near':'bpf-ok';
+      var lbS=st.status==='over'?'<span style="color:var(--rd);font-weight:600;font-size:10.5px">🚫 '+st.msg+'</span>':st.status==='near'?'<span style="color:var(--am);font-weight:500;font-size:10.5px">⚡ '+st.msg+'</span>':'<span style="color:var(--tl);font-size:10.5px">✓ '+st.msg+'</span>';
+      limitBar='<div class="limit-bar"><span style="color:var(--k3);font-size:10.5px;white-space:nowrap">BOQ Limit:</span><div class="lb-track"><div class="lb-fill '+fc+'" style="width:'+pct+'%"></div></div><span style="font-family:var(--mono);font-size:10.5px;color:var(--k3);white-space:nowrap"><b>'+nq.toFixed(3)+'</b> / '+st.b.qty.toFixed(3)+' '+item.unit+'</span>'+lbS+'</div>';
+    }
+    var boqOpts='<option value="">— Link to BOQ —</option>'+(p.boq||[]).map(function(b){return'<option value="'+b.id+'"'+(item.boqRef===b.id?' selected':'')+'>'+esc(b.desc.substring(0,50))+'  ('+b.qty+' '+b.unit+')</option>'}).join('');
+    var sBadge=st.status==='over'?'<span class="itag t-ded" style="margin-left:4px">🚫 EXCEEDED</span>':st.status==='near'?'<span class="itag t-misc" style="margin-left:4px">⚡ '+Math.round(st.pct)+'%</span>':item.boqRef?'<span class="itag t-fin" style="margin-left:4px">✓ '+Math.round(st.pct||0)+'%</span>':'';
+    var dedCnt=item.rows.filter(function(r){return r.isDeduct}).length;
+    var rows='';
+    if(open){
+      rows=limitBar+'<div class="mb-table-wrap"><table class="mbt"><thead><tr><th style="width:25px">#</th><th style="min-width:185px">Description</th><th class="r" style="width:54px">Nos.</th><th class="r" style="width:68px">L (m)</th><th class="r" style="width:68px">B (m)</th><th class="r" style="width:68px">D/H (m)</th><th class="r" style="width:72px">Qty</th><th style="width:34px">−</th><th style="width:46px"></th></tr></thead><tbody>'+
+      item.rows.map(function(row,ri){
+        var q=calcQ(row);var isF=[row.nos,row.L,row.B,row.D].some(function(v){return v&&isNaN(Number(v))});
+        var rc=row.isDeduct?'dr':isF?'fr':'';var qc=q===null?'nil':row.isDeduct?'neg':'';
+        var qd=q===null?'&mdash;':(row.isDeduct?'&minus;':'')+q.toFixed(3);
+        return'<tr class="'+rc+'"><td class="rn">'+(ri+1)+'</td>'+
+          '<td><input class="ci" placeholder="Description\u2026" value="'+esc(row.desc)+'" onchange="upR(\''+item.id+'\',\''+row.id+'\',\'desc\',this.value)"></td>'+
+          ['nos','L','B','D'].map(function(f){return'<td><input class="ci mo" placeholder="'+(f==='nos'?'1':'0.000')+'" value="'+esc(row[f])+'" onchange="upR(\''+item.id+'\',\''+row.id+'\',\''+f+'\',this.value)"></td>'}).join('')+
+          '<td class="qtd '+qc+'">'+qd+'</td>'+
+          '<td class="dcell"><button class="dbtn'+(row.isDeduct?' on':'')+'" onclick="togD(\''+item.id+'\',\''+row.id+'\')">&#8722;</button></td>'+
+          '<td style="display:flex;align-items:center;padding:0 3px">'+
+            '<button class="movebtn" onclick="moveRow(\''+item.id+'\',\''+row.id+'\',-1)" '+(ri===0?'disabled':'')+' title="Move up"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 8V2M2 5l3-3 3 3" stroke="currentColor" stroke-width="1.5"/></svg></button>'+
+            '<button class="movebtn" onclick="moveRow(\''+item.id+'\',\''+row.id+'\',1)" '+(ri===item.rows.length-1?'disabled':'')+' title="Move down"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 2v6M2 5l3 3 3-3" stroke="currentColor" stroke-width="1.5"/></svg></button>'+
+            '<button class="delbtn" onclick="delR(\''+item.id+'\',\''+row.id+'\')"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" stroke-width="1.5"/></svg></button>'+
+          '</td></tr>';
+      }).join('')+'</tbody></table></div>'+
+      '<div class="mb-foot"><div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">'+
+        '<button class="btn sm" onclick="addR(\''+item.id+'\')">+ Row</button>'+
+        '<select class="boq-link-sel'+(item.boqRef?' linked':'')+'" onchange="linkBOQ(\''+item.id+'\',this.value)">'+boqOpts+'</select>'+
+        '<span class="fhint">pi=\u03c0 &middot; Tab to navigate</span>'+
+      '</div><div class="nq"><span class="nq-lbl">Net =</span><span class="nq-val">'+nq.toFixed(3)+' '+item.unit+'</span><span class="nq-amt">\u2192 '+inr(nq*item.rate)+'</span></div></div>';
+    }
+    return'<div class="mb-item '+bClass+'"><div class="mb-hdr" onclick="togX(\''+item.id+'\')"><span class="inum">'+(idx+1)+'.</span><span class="iname">'+esc(item.name)+'</span><span class="itag '+ct+'">'+item.unit+'</span>'+
+      (dedCnt>0?'<span class="itag t-ded" style="margin-left:4px">&minus;'+dedCnt+'</span>':'')+sBadge+
+      '<div style="flex:1"></div>'+
+      '<button class="movebtn" onclick="event.stopPropagation();moveItem(\''+item.id+'\',-1)" '+(idx===0?'disabled':'')+' style="margin-right:2px" title="Move item up"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 8V2M2 5l3-3 3 3" stroke="currentColor" stroke-width="1.5"/></svg></button>'+
+      '<button class="movebtn" onclick="event.stopPropagation();moveItem(\''+item.id+'\',1)" '+(idx===p.items.length-1?'disabled':'')+' style="margin-right:6px" title="Move item down"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 2v6M2 5l3 3 3-3" stroke="currentColor" stroke-width="1.5"/></svg></button>'+
+      '<span style="font-size:10.5px;color:var(--k3);margin-right:5px">Net:</span>'+
+      '<span class="itot">'+nq.toFixed(3)+' '+item.unit+'</span>'+
+      '<svg class="chev'+(open?' open':'')+'" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5"/></svg></div>'+rows+'</div>';
+  }).join('');
+  return ntc+html+'<button class="btn wf" style="padding:8px;border-style:dashed;color:var(--k3)" onclick="openLib()">+ Add Item from Library</button>';
+}
+
+/* ═══════ BILL ═══════ */
+function renderBill(p){
+  var g=gt(p),p2=pa(p),n=nt(p),sd=g*.05,itx=g*.02,net2=Math.max(0,n-sd-itx);
+  var prev=p.bills.length?p.bills[p.bills.length-1]:null;
+  var overW='',rmW='';
+  p.items.forEach(function(it){var st=boqStatus(it,p);if(st.status==='over')overW+='<div>\u2022 <b>'+esc(it.name)+'</b>: '+netQ(it).toFixed(3)+' (BOQ max: '+st.b.qty+')</div>';if(st.rateMis&&st.b)rmW+='<div>\u2022 <b>'+esc(it.name)+'</b>: yours '+inr(it.rate)+' vs BOQ '+inr(st.b.rate)+'</div>';});
+  var warnHtml=(overW?'<div class="alert-banner mb10"><div style="font-size:18px;flex-shrink:0">🚫</div><div><div class="ab-t">Quantity Exceeded</div><div class="ab-b" style="font-size:11px">'+overW+'</div></div></div>':'')+(rmW?'<div class="warn-banner mb10"><div style="font-size:18px;flex-shrink:0">💱</div><div><div class="wb-t">Rate Mismatch</div><div class="ab-b" style="font-size:11px">'+rmW+'</div></div></div>':'');
+  var rows=p.items.map(function(item,i){
+    var st=boqStatus(item,p);
+    return'<tr><td style="text-align:center;font-size:9.5px;color:var(--k4);font-family:var(--mono)">'+(i+1)+'</td><td>'+esc(item.name)+'</td><td style="text-align:center;font-size:10.5px">'+item.unit+'</td><td>'+netQ(item).toFixed(3)+'</td>'+
+      '<td><input type="number" class="rate-inp'+(st.rateMis?' mis':'')+'" title="'+(st.b?'BOQ Rate: '+inr(st.b.rate):'Not linked')+'" value="'+item.rate+'" onchange="upRate(\''+item.id+'\',this.value)"></td>'+
+      '<td>'+inr(netQ(item)*item.rate)+'</td></tr>';
+  }).join('');
+  var hist=p.bills.map(function(b){return'<div class="hi"><div class="hi-t">'+b.label+'</div><div class="hi-m"><span>'+b.date+'</span><span class="tag tg-gr">Paid</span></div><div class="hi-a">'+inr(b.grossAmount)+'</div><div class="prog-bar"><div class="prog-fill pf-am" style="width:'+(g?Math.min(100,b.grossAmount/g*100):100)+'%"></div></div></div>'}).join('');
+  return warnHtml+'<div class="bill-layout"><div class="card"><div class="card-h"><span class="card-t">Abstract — Bill #'+(p.bills.length+1)+'</span><span style="font-size:10px;color:var(--k3)">Red input = BOQ rate mismatch</span></div>'+
+    '<table class="blt"><thead><tr><th style="width:28px">#</th><th>Item</th><th style="width:44px">Unit</th><th style="width:66px">Qty</th><th style="width:92px">Rate (\u20b9)</th><th style="width:104px">Amount (\u20b9)</th></tr></thead><tbody>'+rows+
+    '<tr class="trow"><td colspan="5" style="text-align:right;padding-right:12px;font-family:var(--sans)">Gross Total</td><td>'+inr(g)+'</td></tr>'+
+    (prev?'<tr class="prow"><td colspan="5" style="text-align:right;padding-right:12px;font-size:11px">Less: '+prev.label+'</td><td>&minus;'+inr(p2)+'</td></tr><tr style="background:var(--tl-bg)"><td colspan="5" style="text-align:right;padding-right:12px;font-weight:600;font-size:12px;padding-top:8px;padding-bottom:8px">Net Amount</td><td style="text-align:right;font-family:var(--mono);font-weight:600;font-size:12px;color:var(--tl);padding:8px 10px">'+inr(n)+'</td></tr>':'')+
+    '<tr><td colspan="5" style="text-align:right;padding-right:12px;font-size:11px;color:var(--k3)">Less: Security Deposit @5%</td><td style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--rd);padding:6px 10px">&minus;'+inr(sd)+'</td></tr>'+
+    '<tr><td colspan="5" style="text-align:right;padding-right:12px;font-size:11px;color:var(--k3)">Less: Income Tax @2%</td><td style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--rd);padding:6px 10px">&minus;'+inr(itx)+'</td></tr>'+
+    '<tr class="nrow"><td colspan="5" style="text-align:right;padding-right:12px;font-size:12.5px">Net Amount Payable</td><td style="font-family:var(--mono);font-weight:700;padding:9px 10px">'+inr(net2)+'</td></tr>'+
+    '</tbody></table></div>'+
+    '<div><div class="sec-t">Running History</div>'+hist+
+    '<div class="hi cur"><div class="hi-t">Bill #'+(p.bills.length+1)+' — Current</div><div class="hi-m"><span>Draft</span><span class="tag tg-am">Pending</span></div><div class="hi-a tl">'+inr(g)+'</div><div class="prog-bar"><div class="prog-fill pf-tl" style="width:100%"></div></div></div>'+
+    '<button class="btn tl wf mt10" onclick="recordBill()">Record This Bill</button></div></div>';
+}
+
+/* ═══════ IMPORT ═══════ */
+function parseTxt(txt){
+  var lines=txt.split('\n'),res=[],desc='',isDed=false;
+  lines.forEach(function(raw){
+    var line=raw.trim();if(!line)return;
+    if(/^(less[:\s]|deduct[:\s])/i.test(line))isDed=true;
+    var m=line.match(/^([^\s\/\xd7xX]+)\s*[\/]\s*([^\s\/\xd7xX]+)\s*[\/]\s*([^\s\/\xd7xX]+)\s*(?:[\/]\s*([^\s\/\xd7xX]+))?/);
+    if(m&&(parseFloat(m[1])>0||/pi/i.test(m[1]))){res.push({desc,nos:m[1],L:m[2],B:m[3],D:m[4]||'',isDeduct:isDed});desc='';isDed=false;return;}
+    m=line.match(/^(\d+(?:\.\d+)?)\s*[xX\u00d7]\s*(\d+(?:\.\d+)?)\s*[xX\u00d7]\s*(\d+(?:\.\d+)?)\s*(?:[xX\u00d7]\s*(\d+(?:\.\d+)?))?/);
+    if(m){res.push({desc,nos:m[1],L:m[2],B:m[3],D:m[4]||'',isDeduct:isDed});desc='';isDed=false;return;}
+    desc=line;if(/less|ded/i.test(line))isDed=true;
+  });return res;
+}
+function renderImport(p){
+  var parsed=p.importText?parseTxt(p.importText):[];
+  var prev=parsed.length?
+    '<div class="pp"><div class="pp-row ph"><div class="pp-c">Row</div><div class="pp-c d">Desc</div><div class="pp-c">Nos.</div><div class="pp-c">L</div><div class="pp-c">B</div><div class="pp-c">D</div><div class="pp-c">−</div></div>'+
+    parsed.map(function(r,i){return'<div class="pp-row" style="'+(r.isDeduct?'background:var(--rd-bg)':'')+'"><div class="pp-c" style="color:var(--k4)">'+(i+1)+'</div><div class="pp-c d">'+(r.desc||'<span style="color:var(--k4);font-style:italic">\u2014</span>')+'</div><div class="pp-c">'+(r.nos||'1')+'</div><div class="pp-c">'+(r.L||'&mdash;')+'</div><div class="pp-c">'+(r.B||'&mdash;')+'</div><div class="pp-c">'+(r.D||'&mdash;')+'</div><div class="pp-c" style="text-align:center">'+(r.isDeduct?'<span class="itag t-ded" style="font-size:8.5px">\u2212</span>':'')+'</div></div>'}).join('')+
+    '<div style="margin-top:11px;padding-top:10px;border-top:1px solid var(--br)"><div class="sec-t mb10">Import Into Item</div>'+
+    '<select class="sel wf mb10" id="imp-sel"><option value="">\u2014 Select target item \u2014</option>'+p.items.map(function(it){return'<option value="'+it.id+'"'+(p.importTarget===it.id?' selected':'')+'>'+esc(it.name)+'</option>'}).join('')+'</select>'+
+    '<button class="btn am wf"'+(p.importTarget?'':' disabled')+' onclick="doImport()">Import '+parsed.length+' Rows \u2192</button></div></div>':
+    '<div class="pp" style="display:flex;align-items:center;justify-content:center;color:var(--k4);font-size:11.5px">'+(p.importText?'No rows detected':'Start typing\u2026')+'</div>';
+  return'<div class="imp-eg mb13"><div class="egt">Supported Formats</div>'+
+    [['Slash:','3/6.00/0.23/3.20'],['Cross:','3x6.00x0.23x3.20'],['Formula:','1/pi*4*4/1/1.50'],['Deduction:','Less: Window  6/1.20/0.23/1.50']].map(function(x){return'<div class="eg-row"><span class="eg-f">'+x[0]+'</span><span>'+x[1]+'</span></div>'}).join('')+'</div>'+
+    '<div class="imp-layout"><div><div class="sec-t mb10">Paste Field Notes / Site Measurements</div>'+
+    '<textarea class="imp-ta" id="imp-ta" placeholder="Paste your field measurements here\u2026"></textarea>'+
+    '<button class="btn sm ghost mt8" onclick="loadEg()">Load Example</button></div>'+
+    '<div><div class="sec-t mb10">Parsed Preview ('+parsed.length+' rows)</div>'+prev+'</div></div>';
+}
+function hookImport(p){var ta=document.getElementById('imp-ta');if(ta){ta.value=p.importText;ta.addEventListener('input',function(e){p.importText=e.target.value;renderContent();});}var sel=document.getElementById('imp-sel');if(sel)sel.addEventListener('change',function(e){p.importTarget=e.target.value;});}
+function loadEg(){var p=proj();if(p){p.importText='Excavation along well\n1/pi*4*4/1/1.50\nLess: Footing cuts\n4/0.90/0.90/1.50';renderContent();}}
+function doImport(){var p=proj();if(!p)return;var parsed=parseTxt(p.importText);if(!parsed.length||!p.importTarget)return;var item=p.items.find(function(it){return it.id===p.importTarget});if(!item)return;parsed.forEach(function(r){item.rows.push(nr(r));});p.expanded[p.importTarget]=true;p.importText='';p.importTarget='';saveState();switchTab('mb');}
+
+/* ═══════ EXPORT ═══════ */
+function renderExport(p){
+  var g=gt(p),p2=pa(p),n=nt(p),sd=g*.05,itx=g*.02,net2=Math.max(0,n-sd-itx);
+  var today=new Date().toLocaleDateString('en-IN');var prev=p.bills.length?p.bills[p.bills.length-1]:null;
+  var mbRows=p.items.map(function(it,i){
+    var rows=['<tr class="ih"><td colspan="8">'+(i+1)+'. '+esc(it.name.toUpperCase())+' ('+it.unit+')</td></tr>'];
+    it.rows.forEach(function(r,ri){var q=calcQ(r);rows.push('<tr class="'+(r.isDeduct?'ded':'')+'"><td class="c">'+(ri+1)+'</td><td>'+(r.isDeduct?'Less: ':'')+esc(r.desc)+'</td><td class="c">'+it.unit+'</td><td class="r">'+(r.nos||'1')+'</td><td class="r">'+(r.L||'&mdash;')+'</td><td class="r">'+(r.B||'&mdash;')+'</td><td class="r">'+(r.D||'&mdash;')+'</td><td class="r">'+(q!==null?(r.isDeduct?'('+q.toFixed(2)+')':q.toFixed(2)):'&mdash;')+'</td></tr>');});
+    rows.push('<tr class="tot"><td colspan="7" style="text-align:right;font-weight:700">Net Qty:</td><td class="r" style="color:var(--tl);font-weight:700">'+netQ(it).toFixed(3)+'</td></tr>');
+    return rows.join('');
+  }).join('');
+  var absRows=p.items.map(function(it,i){return'<tr><td class="c">'+(i+1)+'</td><td>'+esc(it.name)+'</td><td class="c">'+it.unit+'</td><td class="r">'+netQ(it).toFixed(3)+'</td><td class="r">'+it.rate.toFixed(2)+'</td><td class="r">'+Math.round(netQ(it)*it.rate).toLocaleString('en-IN')+'</td></tr>'}).join('');
+  return'<div class="exp-layout"><div><div class="sec-t mb10">Government MB Format — Preview</div>'+
+    '<div class="pdf-paper"><div class="pdf-hdr"><div class="pdf-ht">Measurement Book</div><div class="pdf-hs">'+(p.contractNo?p.contractNo+' \u2014 ':'')+esc(p.name)+'</div></div>'+
+    '<div class="pdf-mg">'+[['Project',p.name],['Contract No.',p.contractNo||'—'],['Location',p.location||'—'],['Engineer',p.engineer||'—'],['Bill No.','RA Bill #'+(p.bills.length+1)],['Date',today]].map(function(x){return'<div class="pdf-mr"><span class="pdf-mk">'+x[0]+':</span><span class="pdf-mv">'+esc(x[1])+'</span></div>'}).join('')+'</div>'+
+    '<div style="font-size:10px;font-weight:600;margin-bottom:6px">A. Measurement Details</div>'+
+    '<table class="pdf-t"><thead><tr><th>#</th><th style="min-width:130px;text-align:left">Description</th><th>Unit</th><th>Nos.</th><th>L</th><th>B</th><th>D</th><th>Qty</th></tr></thead><tbody>'+mbRows+'</tbody></table>'+
+    '<div style="font-size:10px;font-weight:600;margin:9px 0 5px">B. Abstract of Cost</div>'+
+    '<table class="pdf-t"><thead><tr><th>#</th><th style="text-align:left">Item</th><th>Unit</th><th>Qty</th><th>Rate (\u20b9)</th><th>Amount (\u20b9)</th></tr></thead><tbody>'+absRows+
+    '<tr class="tot"><td colspan="5" style="text-align:right;font-weight:700">Gross Total</td><td class="r">'+Math.round(g).toLocaleString('en-IN')+'</td></tr>'+
+    (prev?'<tr class="ded"><td colspan="5" style="text-align:right">Less: '+prev.label+'</td><td class="r">('+Math.round(p2).toLocaleString('en-IN')+')</td></tr>':'')+
+    '<tr class="ded"><td colspan="5" style="text-align:right">Less: SD @5%</td><td class="r">('+Math.round(sd).toLocaleString('en-IN')+')</td></tr>'+
+    '<tr class="ded"><td colspan="5" style="text-align:right">Less: IT @2%</td><td class="r">('+Math.round(itx).toLocaleString('en-IN')+')</td></tr>'+
+    '<tr class="net"><td colspan="5" style="text-align:right;font-weight:700">Net Amount Payable</td><td class="r">'+Math.round(net2).toLocaleString('en-IN')+'</td></tr>'+
+    '</tbody></table><div class="pdf-sign">'+['Junior Engineer','Asst. Engineer','Exec. Engineer','Contractor'].map(function(s){return'<div class="sign-bx"><div class="sign-ln"></div>'+s+'</div>'}).join('')+'</div></div></div>'+
+    '<div><div class="sec-t mb10">Download</div><div class="exp-btns">'+
+    '<button class="exp-btn pri" onclick="exportPDF()"><div class="eb-ico" style="background:rgba(255,255,255,.14)">📄</div><div><div class="eb-t">Export PDF</div><div class="eb-s">Full MB + Abstract (Govt. format)</div></div></button>'+
+    '<button class="exp-btn" onclick="exportCSV()"><div class="eb-ico" style="background:var(--gr-bg)">📊</div><div><div class="eb-t" style="color:var(--k)">Download CSV</div><div class="eb-s">Abstract, Excel-ready</div></div></button>'+
+    '<button class="exp-btn" onclick="window.print()"><div class="eb-ico" style="background:var(--bl-bg)">🖨️</div><div><div class="eb-t" style="color:var(--k)">Print</div><div class="eb-s">Print preview directly</div></div></button>'+
+    '</div>'+
+    '<div style="margin-top:10px;padding:10px 12px;background:var(--s2);border-radius:var(--radius);font-size:10.5px;color:var(--k3);line-height:1.8">'+
+    '<div style="font-weight:600;color:var(--k);margin-bottom:3px">Bill Summary</div>'+
+    'Items: '+p.items.length+'<br>Gross: <b style="color:var(--am)">'+inr(g)+'</b><br>Net Payable: <b style="color:var(--tl)">'+inr(net2)+'</b><br>Date: '+today+'</div></div></div>';
+}
+
+/* ═══════ PROJECT MODAL ═══════ */
+var NPD={name:'',contractNo:'',location:'',engineer:'',contractor:'',color:'#0b7a69',boq:[],newSec:'General',newDesc:'',newQty:'',newUnit:'Cum',newRate:'',pasteTxt:''};
+var editId=null;
+function openNewProject(){editId=null;NPD={name:'',contractNo:'',location:'',engineer:'',contractor:'',color:COLORS[1],boq:[],newSec:'General',newDesc:'',newQty:'',newUnit:'Cum',newRate:'',pasteTxt:''};showModal(projModal());}
+function openEditProject(){var p=proj();if(!p)return;editId=p.id;NPD={name:p.name,contractNo:p.contractNo||'',location:p.location||'',engineer:p.engineer||'',contractor:p.contractor||'',color:p.color||COLORS[1],boq:JSON.parse(JSON.stringify(p.boq||[])),newSec:'General',newDesc:'',newQty:'',newUnit:'Cum',newRate:'',pasteTxt:''};showModal(projModal());}
+function projModal(){
+  var isEdit=editId!==null;
+  var colorDots=COLORS.map(function(c){return'<div class="cp-dot'+(NPD.color===c?' sel':'')+'" style="background:'+c+'" onclick="npColor(\''+c+'\')"></div>'}).join('');
+  var boqRows=NPD.boq.length?
+    '<div style="background:var(--s);border-radius:6px;padding:9px;max-height:180px;overflow-y:auto;border:1px solid var(--br);margin-bottom:8px">'+
+    NPD.boq.map(function(b,i){return'<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--s2);font-size:11.5px">'+
+      '<span style="font-size:9px;color:var(--k4);min-width:20px;text-align:center;font-family:var(--mono)">'+(i+1)+'</span>'+
+      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(b.desc)+'</span>'+
+      '<span style="font-family:var(--mono);font-size:11px;color:var(--k3);white-space:nowrap">'+b.qty+' '+b.unit+'</span>'+
+      '<span style="font-family:var(--mono);font-size:11px;color:var(--am);white-space:nowrap">'+inr(b.rate)+'</span>'+
+      '<button class="btn xs rd" onclick="npDelBoq('+i+')">✕</button></div>';
+    }).join('')+'</div>':'<div style="text-align:center;padding:10px;color:var(--k4);font-size:11.5px;background:var(--s2);border-radius:6px;margin-bottom:8px">No BOQ items yet</div>';
+  return'<div class="mhdr"><span class="mt-m">'+(isEdit?'Edit Project Settings':'New Project')+'</span><button class="btn sm" onclick="closeModal()">\u2715</button></div>'+
+    '<div class="mbody" style="min-width:540px;max-width:600px">'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">'+
+    '<div class="form-row"><label class="form-label">Project Name *</label><input class="form-input" id="np-name" placeholder="e.g. Atali Water Supply" value="'+esc(NPD.name)+'" oninput="NPD.name=this.value"></div>'+
+    '<div class="form-row"><label class="form-label">Contract No.</label><input class="form-input" placeholder="e.g. 2022-23/267" value="'+esc(NPD.contractNo)+'" oninput="NPD.contractNo=this.value"></div></div>'+
+    '<div class="form-row"><label class="form-label">Location</label><input class="form-input sm" placeholder="Village, Taluka, District" value="'+esc(NPD.location)+'" oninput="NPD.location=this.value"></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">'+
+    '<div class="form-row"><label class="form-label">Engineer / Authority</label><input class="form-input sm" placeholder="Name / Designation" value="'+esc(NPD.engineer)+'" oninput="NPD.engineer=this.value"></div>'+
+    '<div class="form-row"><label class="form-label">Contractor</label><input class="form-input sm" placeholder="Contractor name" value="'+esc(NPD.contractor)+'" oninput="NPD.contractor=this.value"></div></div>'+
+    '<div class="form-row"><label class="form-label">Project Color</label><div class="color-picker">'+colorDots+'</div></div>'+
+    '<div class="form-row"><label class="form-label">BOQ Items <span style="font-weight:400;color:var(--k4);text-transform:none;font-size:10px">(for limit tracking)</span></label>'+
+    boqRows+
+    '<div style="background:var(--am-bg);border:1px solid var(--am-bd);border-radius:6px;padding:10px 12px;margin-bottom:8px">'+
+    '<div style="font-size:10px;font-weight:600;color:var(--am);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Add BOQ Item Manually</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px">'+
+    '<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Section / Group</div><input class="form-input sm" placeholder="e.g. Civil Works" value="'+esc(NPD.newSec)+'" oninput="NPD.newSec=this.value"></div>'+
+    '<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Description *</div><input class="form-input sm" id="np-desc" placeholder="Item description" value="'+esc(NPD.newDesc)+'" oninput="NPD.newDesc=this.value"></div></div>'+
+    '<div style="display:grid;grid-template-columns:80px 80px 100px auto;gap:7px;align-items:end">'+
+    '<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Qty *</div><input type="number" class="form-input sm" placeholder="0.00" value="'+NPD.newQty+'" oninput="NPD.newQty=this.value"></div>'+
+    '<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Unit</div><select class="form-input sm" onchange="NPD.newUnit=this.value">'+['Cum','Sqm','Rmt','MT','Nos','Sets','BHP','M','Kg','Job','Months','Days','Km'].map(function(u){return'<option'+(NPD.newUnit===u?' selected':'')+'>'+u+'</option>'}).join('')+'</select></div>'+
+    '<div><div style="font-size:9.5px;color:var(--k3);margin-bottom:2px">Rate (\u20b9) *</div><input type="number" class="form-input sm" placeholder="0.00" value="'+NPD.newRate+'" oninput="NPD.newRate=this.value"></div>'+
+    '<button class="btn am sm" onclick="npAddBoq()" style="height:30px">+ Add</button></div></div>'+
+    '<div style="background:var(--bl-bg);border:1px solid var(--bl-bd);border-radius:6px;padding:10px 12px">'+
+    '<div style="font-size:10px;font-weight:600;color:var(--bl);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">📋 Paste from Excel / Spreadsheet</div>'+
+    '<div style="font-size:10.5px;color:var(--k3);margin-bottom:7px">Copy cells from Excel: Description | Qty | Unit | Rate — then paste below</div>'+
+    '<textarea class="form-input sm" style="height:70px;resize:none;font-family:var(--mono);font-size:10.5px" placeholder="Paste Excel rows here (Tab or comma separated)&#10;Excavation in Foundation&#9;286.56&#9;Cum&#9;464&#10;PCC M150 in Foundation&#9;5.20&#9;Cum&#9;6771.29" oninput="NPD.pasteTxt=this.value">'+esc(NPD.pasteTxt)+'</textarea>'+
+    '<button class="btn sm" style="margin-top:6px" onclick="npPasteBoq()">Parse &amp; Import Rows</button></div></div>'+
+    '<div style="display:flex;gap:8px;margin-top:4px">'+
+    '<button class="btn am wf" onclick="saveProject()">'+(isEdit?'Save Changes':'Create Project')+'</button>'+
+    (isEdit?'<button class="btn rd sm" onclick="deleteProject()">Delete Project</button>':'')+
+    '</div></div>';
+}
+function npColor(c){NPD.color=c;showModal(projModal());}
+function npAddBoq(){
+  if(!NPD.newDesc||!NPD.newQty||!NPD.newRate){toast('Fill description, qty and rate first');return;}
+  NPD.boq.push({id:'b'+uid(),sec:NPD.newSec||'General',desc:NPD.newDesc,qty:parseFloat(NPD.newQty),unit:NPD.newUnit,rate:parseFloat(NPD.newRate)});
+  NPD.newDesc='';NPD.newQty='';NPD.newRate='';showModal(projModal());
+}
+function npDelBoq(i){NPD.boq.splice(i,1);showModal(projModal());}
+function npPasteBoq(){
+  if(!NPD.pasteTxt.trim()){toast('Paste some data first');return;}
+  var lines=NPD.pasteTxt.trim().split('\n');var added=0;
+  lines.forEach(function(line){
+    if(!line.trim())return;
+    var cols=line.split(/\t/);
+    if(cols.length<2)cols=line.split(',');
+    var desc=(cols[0]||'').trim();var qty=parseFloat(cols[1]);var unit=(cols[2]||'Cum').trim();var rate=parseFloat(cols[3]);
+    if(desc&&qty>0&&rate>0){NPD.boq.push({id:'b'+uid(),sec:NPD.newSec||'General',desc,qty,unit,rate});added++;}
+  });
+  NPD.pasteTxt='';showModal(projModal());if(added>0)toast(added+' BOQ items imported from paste');else toast('No valid rows found — check format');
+}
+function saveProject(){
+  if(!NPD.name.trim()){toast('Project name is required');return;}
+  if(editId){
+    var p=APP.projects.find(function(pr){return pr.id===editId});
+    if(p)Object.assign(p,{name:NPD.name,contractNo:NPD.contractNo,location:NPD.location,engineer:NPD.engineer,contractor:NPD.contractor,color:NPD.color,boq:NPD.boq});
+  }else{
+    var np={id:'proj_'+uid(),name:NPD.name,contractNo:NPD.contractNo,location:NPD.location,engineer:NPD.engineer,contractor:NPD.contractor,color:NPD.color,boq:NPD.boq,tab:'dashboard',expanded:{},bills:[],importText:'',importTarget:'',items:[]};
+    APP.projects.push(np);APP.activeProjectId=np.id;
+  }
+  saveState();closeModal();render();toast((editId?'Saved: ':'Created: ')+NPD.name);
+}
+function deleteProject(){
+  if(!confirm('Delete "'+NPD.name+'" and all its data? This cannot be undone.'))return;
+  APP.projects=APP.projects.filter(function(p){return p.id!==editId});
+  APP.activeProjectId=APP.projects.length?APP.projects[0].id:null;
+  saveState();closeModal();render();
+}
+
+/* ═══════ ITEM LIBRARY ═══════ */
+function openLib(){showModal(libModal(''));}
+function libModal(q){
+  var cats=[...new Set(STD_LIB.map(function(l){return l.cat}))];
+  var fl=STD_LIB.filter(function(l){return l.name.toLowerCase().includes(q.toLowerCase())||l.cat.toLowerCase().includes(q.toLowerCase())});
+  return'<div class="mhdr"><span class="mt-m">Item Library</span><button class="btn sm" onclick="closeModal()">\u2715</button></div>'+
+    '<div class="mbody" style="min-width:440px">'+
+    '<input style="width:100%;padding:7px 10px;border:1.5px solid var(--br);border-radius:6px;font-size:12px;outline:none;margin-bottom:10px" id="ls" placeholder="Search items\u2026" oninput="showModal(libModal(this.value))" autofocus value="'+esc(q)+'">'+
+    cats.map(function(cat){var items=fl.filter(function(l){return l.cat===cat});if(!items.length)return'';return'<div style="font-size:8.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--k3);margin:8px 0 5px;padding-bottom:2px;border-bottom:1px solid var(--s2)">'+cat+'</div>'+items.map(function(l){return'<div style="padding:8px 11px;border:1px solid var(--br);border-radius:6px;cursor:pointer;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;transition:all .1s" onmouseover="this.style.borderColor=\'var(--am-bd)\';this.style.background=\'var(--am-bg)\'" onmouseout="this.style.borderColor=\'var(--br)\';this.style.background=\'#fff\'" onclick="addLib(\''+l.id+'\')"><div><div style="font-size:12px;font-weight:500;color:var(--k)">'+l.name+'</div><div style="font-size:10px;color:var(--k3)">Unit: '+l.unit+'</div></div><div style="font-family:var(--mono);font-size:12px;color:var(--am)">\u20b9'+l.rate+'/'+l.unit+'</div></div>'}).join('')}).join('')+
+    '</div>';
+}
+function addLib(lid){
+  var lib=STD_LIB.find(function(l){return l.id===lid});if(!lib)return;
+  var p=proj();if(!p)return;
+  var nid='i'+uid();p.items.push({id:nid,cat:lib.cat,name:lib.name,unit:lib.unit,rate:lib.rate,boqRef:'',rows:[nr()]});
+  p.expanded[nid]=true;saveState();closeModal();switchTab('mb');
+}
+function showModal(html){var ov=document.getElementById('modal-ov');ov.style.display='flex';ov.innerHTML='<div class="modal" onclick="event.stopPropagation()">'+html+'</div>';setTimeout(function(){var x=document.getElementById('ls')||document.getElementById('np-name');if(x)x.focus();},50);}
+function closeModal(){document.getElementById('modal-ov').style.display='none';}
+
+/* ═══════ ACTIONS ═══════ */
+function upR(iid,rid,f,v){var p=proj();if(!p)return;var item=p.items.find(function(it){return it.id===iid});if(!item)return;var row=item.rows.find(function(r){return r.id===rid});if(!row)return;row[f]=v;dirty();}
+function togD(iid,rid){var p=proj();if(!p)return;var item=p.items.find(function(it){return it.id===iid});if(!item)return;var row=item.rows.find(function(r){return r.id===rid});if(!row)return;row.isDeduct=!row.isDeduct;saveState();renderContent();}
+function togX(id){var p=proj();if(!p)return;p.expanded[id]=!p.expanded[id];saveState();renderContent();}
+function addR(iid){var p=proj();if(!p)return;var item=p.items.find(function(it){return it.id===iid});if(item){item.rows.push(nr());saveState();renderContent();}}
+function delR(iid,rid){var p=proj();if(!p)return;var item=p.items.find(function(it){return it.id===iid});if(!item)return;if(item.rows.length<=1){toast('Need at least one row.');return;}item.rows=item.rows.filter(function(r){return r.id!==rid});saveState();renderContent();}
+function moveRow(iid,rid,dir){var p=proj();if(!p)return;var item=p.items.find(function(it){return it.id===iid});if(!item)return;var idx=item.rows.findIndex(function(r){return r.id===rid});var ni=idx+dir;if(ni<0||ni>=item.rows.length)return;var tmp=item.rows[idx];item.rows[idx]=item.rows[ni];item.rows[ni]=tmp;saveState();renderContent();}
+function moveItem(iid,dir){var p=proj();if(!p)return;var idx=p.items.findIndex(function(it){return it.id===iid});var ni=idx+dir;if(ni<0||ni>=p.items.length)return;var tmp=p.items[idx];p.items[idx]=p.items[ni];p.items[ni]=tmp;saveState();renderContent();}
+function upRate(iid,v){var p=proj();if(!p)return;var item=p.items.find(function(it){return it.id===iid});if(item){item.rate=parseFloat(v)||0;dirty();}}
+function linkBOQ(iid,bid){var p=proj();if(!p)return;var item=p.items.find(function(it){return it.id===iid});if(!item)return;item.boqRef=bid;if(bid){var b=(p.boq||[]).find(function(b2){return b2.id===bid});if(b)item.rate=b.rate;}saveState();renderContent();}
+function recordBill(){var p=proj();if(!p)return;var g=gt(p);p.bills.push({id:'b'+uid(),label:'RA Bill #'+(p.bills.length+1),date:new Date().toLocaleDateString('en-IN'),grossAmount:g});saveState();render();toast('Bill #'+p.bills.length+' recorded \u2014 '+inr(g));}
+function exportCSV(){var p=proj();if(!p)return;var rows=[['S.No.','Item','Unit','Qty','BOQ Qty','Rate','Amount','Status']];p.items.forEach(function(it,i){var st=boqStatus(it,p);rows.push([i+1,it.name,it.unit,netQ(it).toFixed(3),st.b?st.b.qty:'N/A',it.rate,Math.round(netQ(it)*it.rate),st.status.toUpperCase()])});var csv=rows.map(function(r){return r.map(function(c){return'"'+c+'"'}).join(',')}).join('\n');var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='Abstract_'+p.name.replace(/\s+/g,'_')+'.csv';a.click();}
+function toast(msg){var t=document.createElement('div');t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 18px;border-radius:20px;font-size:12px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.25);transition:opacity .3s;white-space:nowrap';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.style.opacity='0';setTimeout(function(){t.remove()},300)},2500);}
+function exportPDF(){
+  var p=proj();if(!p)return;
+  var g=gt(p),p2=pa(p),n=nt(p),sd=g*.05,itx=g*.02,net2=Math.max(0,n-sd-itx);
+  var today=new Date().toLocaleDateString('en-IN');var prev=p.bills.length?p.bills[p.bills.length-1]:null;
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>MB '+esc(p.name)+'</title>'+
+  '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:9.5pt;padding:11mm}.hdr{background:#111827;color:#fff;padding:9px;text-align:center;margin-bottom:11px}.hdr h1{font-size:13pt;letter-spacing:.04em}.hdr p{font-size:8.5pt;color:rgba(255,255,255,.6);margin-top:2px}.mg{display:grid;grid-template-columns:1fr 1fr;gap:2px 18px;margin-bottom:10px;font-size:8.5pt}.mr{display:flex;gap:5px}.mk{color:#666;min-width:75px;font-weight:600}.mv{color:#111}h2{font-size:9.5pt;font-weight:700;margin:9px 0 5px}table{width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:8px}th{border:1px solid #111;padding:3px 5px;background:#eee;font-weight:700;font-size:7.5pt;text-align:center}td{border:1px solid #ccc;padding:3px 5px}td.r{text-align:right;font-family:"Courier New",monospace}td.c{text-align:center}tr.ih td{background:#fff8e1;font-weight:700;color:#b45309;border-left:2px solid #f59e0b}tr.tot td{background:#f3f4f6;font-weight:700;border-top:2px solid #888}tr.net td{background:#ecfdf5;font-weight:700;color:#065f46}tr.ded td{color:#991b1b;background:#fef2f2}.signs{display:flex;justify-content:space-between;margin-top:18px;padding-top:10px;border-top:1px dashed #888}.sign{text-align:center;font-size:7.5pt;color:#666}.sign-line{height:1px;background:#333;width:80px;margin:0 auto 3px}.footer{text-align:center;font-size:7pt;color:#888;margin-top:12px;border-top:1px solid #ddd;padding-top:6px}@media print{body{padding:7mm}}</style></head><body>'+
+  '<div class="hdr"><h1>MEASUREMENT BOOK</h1><p>'+(p.contractNo?p.contractNo+' \u2014 ':'')+esc(p.name)+' \u2014 RA Bill #'+(p.bills.length+1)+'</p></div>'+
+  '<div class="mg">'+[['Project',p.name],['Contract No.',p.contractNo||'—'],['Location',p.location||'—'],['Engineer',p.engineer||'—'],['Bill No.','RA Bill #'+(p.bills.length+1)],['Date',today]].map(function(x){return'<div class="mr"><span class="mk">'+x[0]+':</span><span class="mv">'+x[1]+'</span></div>'}).join('')+'</div>'+
+  '<h2>A. Measurement Details</h2>'+
+  '<table><thead><tr><th>#</th><th style="min-width:150px;text-align:left">Description</th><th>Unit</th><th>Nos.</th><th>L</th><th>B</th><th>D</th><th>Qty</th></tr></thead><tbody>';
+  p.items.forEach(function(it,i){
+    html+='<tr class="ih"><td colspan="8">'+(i+1)+'. '+esc(it.name.toUpperCase())+' ('+it.unit+')</td></tr>';
+    it.rows.forEach(function(r){var q=calcQ(r);html+='<tr class="'+(r.isDeduct?'ded':'')+'"><td></td><td>'+(r.isDeduct?'Less: ':'')+esc(r.desc)+'</td><td class="c">'+it.unit+'</td><td class="r">'+(r.nos||'1')+'</td><td class="r">'+(r.L||'—')+'</td><td class="r">'+(r.B||'—')+'</td><td class="r">'+(r.D||'—')+'</td><td class="r">'+(q!==null?(r.isDeduct?'('+q.toFixed(3)+')':q.toFixed(3)):'—')+'</td></tr>';});
+    html+='<tr class="tot"><td colspan="7" style="text-align:right">Net Qty ('+it.unit+'):</td><td class="r" style="color:#065f46;font-weight:700">'+netQ(it).toFixed(3)+'</td></tr>';
+  });
+  html+='</tbody></table><h2>B. Abstract of Cost</h2><table><thead><tr><th>#</th><th style="text-align:left">Item</th><th>Unit</th><th>Qty</th><th>Rate (\u20b9)</th><th>Amount (\u20b9)</th></tr></thead><tbody>';
+  p.items.forEach(function(it,i){html+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(it.name)+'</td><td class="c">'+it.unit+'</td><td class="r">'+netQ(it).toFixed(3)+'</td><td class="r">'+it.rate.toFixed(2)+'</td><td class="r">'+Math.round(netQ(it)*it.rate).toLocaleString('en-IN')+'</td></tr>'});
+  html+='<tr class="tot"><td colspan="5" style="text-align:right;font-weight:700">Gross Total</td><td class="r">'+Math.round(g).toLocaleString('en-IN')+'</td></tr>';
+  if(prev)html+='<tr class="ded"><td colspan="5" style="text-align:right">Less: '+prev.label+'</td><td class="r">('+Math.round(p2).toLocaleString('en-IN')+')</td></tr>';
+  html+='<tr class="ded"><td colspan="5" style="text-align:right">Less: SD @5%</td><td class="r">('+Math.round(sd).toLocaleString('en-IN')+')</td></tr>'+
+  '<tr class="ded"><td colspan="5" style="text-align:right">Less: IT @2%</td><td class="r">('+Math.round(itx).toLocaleString('en-IN')+')</td></tr>'+
+  '<tr class="net"><td colspan="5" style="text-align:right;font-weight:700">Net Amount Payable</td><td class="r">'+Math.round(net2).toLocaleString('en-IN')+'</td></tr>'+
+  '</tbody></table><div class="signs">'+['Junior Engineer','Assistant Engineer','Executive Engineer','Contractor'].map(function(s){return'<div class="sign"><div class="sign-line"></div>'+s+'</div>'}).join('')+'</div>'+
+  '<div class="footer">AutoBill Civil Pro \u2014 '+esc(p.name)+' \u2014 Generated '+new Date().toLocaleString('en-IN')+'</div></body></html>';
+  var w=window.open('','_blank','width=950,height=720');if(w){w.document.write(html);w.document.close();setTimeout(function(){w.print()},600);}else toast('Allow popups to export PDF');
+}
+
+/* ═══════ KEYBOARD SHORTCUTS ═══════ */
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  if(e.key==='n'||e.key==='N'){openNewProject();}
+  else if(e.key==='r'||e.key==='R'){recordBill();}
+  else if(e.key==='e'||e.key==='E'){exportPDF();}
+  else if(e.key==='1'){switchTab('dashboard');}
+  else if(e.key==='2'){switchTab('boq');}
+  else if(e.key==='3'){switchTab('mb');}
+  else if(e.key==='4'){switchTab('bill');}
+  else if(e.key==='5'){switchTab('export');}
+  else if(e.key==='Escape'){closeModal();}
+});
+
+/* ═══════ INIT ═══════ */
+var restored=loadState();
+if(!restored||APP.projects.length===0){
+  // Fresh start — show onboarding
+  APP={activeProjectId:null,projects:[]};
+}
+render();
+</script>
+</body>
+</html>
